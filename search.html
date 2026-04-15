@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Search Results</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+
+    button {
+      padding: 8px;
+      margin-top: 5px;
+      margin-right: 5px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Search Results</h2>
+
+<button onclick="goBack()">⬅ Back</button>
+
+<div id="results"></div>
+
+<script>
+
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+// ================= LOAD RESULTS =================
+window.onload = async function() {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("q");
+
+  if (!query) {
+    document.getElementById("results").innerHTML = "<p>No search query</p>";
+    return;
+  }
+
+  const res = await fetch(`${API_URL}/products?search=${query}`);
+  const data = await res.json();
+
+  const container = document.getElementById("results");
+
+  if (data.length === 0) {
+    container.innerHTML = "<p>No products found</p>";
+    return;
+  }
+
+  data.forEach(function(p) {
+
+    let alerts = "";
+
+    if (p.low_stock) {
+      alerts += "<p style='color:red;'>⚠ Low Stock</p>";
+    }
+
+    if (p.expiry_status === "expiring_soon") {
+      alerts += "<p style='color:orange;'>⚠ Expiring Soon</p>";
+    }
+
+    if (p.expiry_status === "expired") {
+      alerts += "<p style='color:red;'>❌ Expired</p>";
+    }
+
+    container.innerHTML += `
+      <div class="card">
+        <h3>${p.name}</h3>
+
+        <p>Size: ${p.size || "N/A"}</p>
+        <p>Price: ${p.price || "N/A"}</p>
+        <p>Stock: ${p.stock ?? 0}</p>
+
+        ${alerts}
+
+        <button onclick="sell('${p.name}', '${p.size}')">Sell</button>
+        <button onclick="deleteProduct('${p.id}')">Delete</button>
+      </div>
+    `;
+  });
+};
+
+// ================= SELL =================
+async function sell(name, size) {
+  const quantity = prompt("Enter quantity");
+  if (!quantity) return;
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/products/sell`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      name: name,
+      size: size,
+      quantity: parseInt(quantity)
+    })
+  });
+
+  if (!res.ok) {
+    alert("Sale failed");
+    return;
+  }
+
+  alert("Sale recorded!");
+}
+
+// ================= DELETE =================
+async function deleteProduct(id) {
+  const token = localStorage.getItem("token");
+
+  await fetch(`${API_URL}/products/${id}`, {
+    method: "DELETE",
+    headers: {
+      "Authorization": "Bearer " + token
+    }
+  });
+
+  alert("Deleted!");
+  location.reload();
+}
+
+// ================= BACK =================
+function goBack() {
+  window.history.back();
+}
+container.innerHTML = "Loading...";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 300px;
+    }
+
+    input {
+      width: 85%;
+      padding: 10px;
+      margin: 4px 0;
+    }
+
+    button {
+      width: 90%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    .toggle {
+      text-align: center;
+      margin-top: 10px;
+      cursor: pointer;
+      color: #2563eb;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2 id="title">Login</h2>
+
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+
+<button onclick="submitAuth()">Submit</button>
+
+<div class="toggle" onclick="toggleMode()">
+  Switch to Register
+</div>
+
+</div>
+
+<script>
+
+let isLogin = true;
+
+function toggleMode() {
+  isLogin = !isLogin;
+  document.getElementById("title").innerText = isLogin ? "Login" : "Register";
+  document.querySelector(".toggle").innerText =
+    isLogin ? "Switch to Register" : "Switch to Login";
+}
+
+async function submitAuth() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const url = isLogin
+    ? "https://inventory-system-eipk.onrender.com/auth/login"
+    : "https://inventory-system-eipk.onrender.com/auth/register";
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.detail || "Error");
+    return;
+  }
+
+  if (isLogin) {
+    localStorage.setItem("token", data.access_token);
+    window.location.href = "dashboard.html";
+  } else {
+    alert("Registered! Now login.");
+    toggleMode();
+  }
+}
+container.innerHTML = "Loading...";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Products</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 40px;
+    }
+
+    /* HEADER */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      position: left;
+    }
+
+    h2 {
+      margin: 0;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+    }
+
+    /* CARD */
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* FORM */
+   .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .form-row input,
+    .form-row select {
+      flex: 1;
+      min-width: 110px;
+      padding: 8px;   /* 👈 smaller */
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    /* ✅ EXPIRY BELOW */
+    .expiry-row {
+      display: flex;
+      flex-direction: column;
+      margin-top: 10px;
+      width: 200px;
+    }
+
+    .expiry-row input {
+      padding: 8px;
+    }
+
+    .form-actions {
+          margin-top: 20px;
+          margin-bottom: 20px;
+        }
+
+    /* BUTTONS */
+    button {
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    /* SEARCH */
+    .search-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-box input {
+      width: 200px;   /* 👈 control width */
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <h2>Products</h2>
+  <button class="secondary" onclick="goToDashboard()">⬅ Dashboard</button>
+</div>
+
+<!-- ADD PRODUCT -->
+<div class="form-row">
+  <input id="name" placeholder="Product Name">
+
+  <select id="size">
+    <option value="">Size</option>
+    <option>Big</option>
+    <option>Medium</option>
+    <option>Small</option>
+  </select>
+
+  <select id="category"></select>
+
+  <input id="price" type="number" placeholder="Price">
+  <input id="stock" type="number" placeholder="Stock">
+</div>
+
+<!-- ✅ EXPIRY ON NEW LINE -->
+<div class="expiry-row">
+  <label>Expiry Date</label>
+  <input id="expiry" type="date">
+</div>
+
+  <div class="form-actions">
+    <button class="primary" onclick="addProduct()">Add Product</button>
+    <button class="secondary" onclick="clearForm()">Clear</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="card">
+  <h3>Search Product</h3>
+
+  <div class="search-box">
+    <input id="searchInput" placeholder="Search product">
+    <button class="primary" onclick="goToSearch()">Search</button>
+  </div>
+</div>
+
+<!-- PRODUCT LIST -->
+<div id="productList"></div>
+
+<script>
+
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+// NAVIGATION
+function goToDashboard() {
+  window.location.href = "dashboard.html";
+}
+
+// CATEGORY LIST
+const categories = [
+  "Hair",
+  "Skin Care",
+  "Makeup",
+  "Fragrance",
+  "Hyginics"
+];
+
+// LOAD CATEGORY
+function loadCategoryDropdown() {
+  const select = document.getElementById("category");
+
+  select.innerHTML = `<option value="">Select Category</option>`;
+
+  categories.forEach(function(cat) {
+    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+  });
+}
+
+// ADD PRODUCT
+async function addProduct() {
+  const name = document.getElementById("name").value;
+  const size = document.getElementById("size").value;
+  const price = document.getElementById("price").value;
+  const stock = document.getElementById("stock").value;
+  const expiry = document.getElementById("expiry").value;
+  const category = document.getElementById("category").value;
+
+  if (!name || !size || !price || !stock) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      name: name,
+      size: size,
+      price: parseFloat(price),
+      stock: parseInt(stock),
+      category: category,
+      expiry_date: expiry
+    })
+  });
+
+  if (!res.ok) {
+    alert("Failed to add product");
+    return;
+  }
+
+  alert("Product added!");
+  clearForm();
+}
+
+// CLEAR FORM
+function clearForm() {
+  document.getElementById("name").value = "";
+  document.getElementById("size").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("stock").value = "";
+  document.getElementById("expiry").value = "";
+}
+
+// SEARCH
+function goToSearch() {
+  const query = document.getElementById("searchInput").value;
+
+  if (!query) {
+    alert("Enter product name");
+    return;
+  }
+
+  window.location.href = `search.html?q=${query}`;
+}
+
+// LOAD
+window.onload = function() {
+  loadCategoryDropdown();
+};
+
+</script>
+
+</body>
+</html>

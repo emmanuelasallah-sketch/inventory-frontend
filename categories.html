@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Categories</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-top: 30px;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .card {
+      background: white;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <button onclick="goToDashboard()">⬅ Back to Dashboard</button>
+
+<h1>Product Categories</h1>
+
+<div id="productList"></div>
+
+<script>
+
+function goToDashboard() {
+  window.location.href = "dashboard.html";
+}
+
+
+
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+// ================= LOAD PRODUCTS =================
+window.onload = async function() {
+  const res = await fetch(`${API_URL}/products`);
+  const data = await res.json();
+
+  console.log("DATA FROM BACKEND:", data);  // 👈 ADD THIS
+
+  displayByCategory(data);
+};
+
+// ================= GROUP + DISPLAY =================
+function displayByCategory(products) {
+  const container = document.getElementById("productList");
+  container.innerHTML = "";
+
+  const categories = ["Hair", "Skin Care", "Makeup", "Fragrance", "Hyginics"];
+  const grouped = {};
+
+  categories.forEach(function(cat) {
+    grouped[cat] = [];
+  });
+
+  grouped["Others"] = [];
+
+  products.forEach(function(p) {
+    const cat = p.category && categories.includes(p.category)
+      ? p.category
+      : "Others";
+
+    grouped[cat].push(p);
+  });
+
+  categories.concat(["Others"]).forEach(function(cat) {
+    container.innerHTML += `<h2>${cat}</h2>`;
+
+    if (grouped[cat].length === 0) {
+      container.innerHTML += `<p style="color:gray;">No products</p>`;
+    }
+
+    grouped[cat].forEach(function(p) {
+      container.innerHTML += `
+        <div class="card">
+          <h3>${p.name}</h3>
+          <p>Stock: ${p.stock ?? 0}</p>
+        </div>
+      `;
+    });
+  });
+}
+
+container.innerHTML = "Loading...";
+</script>
+
+</body>
+</html>

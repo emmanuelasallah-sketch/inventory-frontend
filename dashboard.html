@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "index.html";
+  </script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 190px;
+      background: #111;
+      color: white;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding: 10px;
+    }
+
+    .sidebar h2 {
+      color: orange;
+    }
+
+    .sidebar button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      background: none;
+      color: white;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .sidebar button:hover {
+      background: #333;
+    }
+
+    /* Main */
+    .main {
+      margin-left: 200px;
+      padding: 20px;
+      background: #f4f6f8;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Topbar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Alert */
+    .alert-box {
+      position: relative;
+      cursor: pointer;
+      font-size: 20px;
+    }
+
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -10px;
+      background: red;
+      color: white;
+      border-radius: 50%;
+      padding: 3px 7px;
+      font-size: 12px;
+    }
+
+    input {
+      padding: 8px;
+      width: 250px;
+      margin-top: 15px;
+    }
+
+    button.search {
+      padding: 8px 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>Inventory</h2>
+
+  <button onclick="go('products.html')">Products</button>
+  <button onclick="go('sales.html')">Sales</button>
+  <button onclick="go('categories.html')">Categories</button>
+  <button onclick="goToStockHistory()">Stock History</button>
+  <button onclick="goToSalesHistory()">Sales History</button>
+  <button onclick="goToAlerts()">Alerts</button>
+
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <h1>Dashboard</h1>
+
+    <div class="alert-box" onclick="goToAlerts()">
+      🔔
+      <span id="alertCount" class="badge">0</span>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <input id="searchInput" placeholder="Search product">
+  <button class="search" onclick="goToSearch()">Search</button>
+
+  <!-- WELCOME -->
+  <h3>Welcome</h3>
+  <p>Select a section from the sidebar</p>
+
+  <!-- SALES TODAY -->
+  <div class="card">
+    <h3>Today's Sales</h3>
+    <h2 id="todaySales">0</h2>
+  </div>
+
+  <!-- CHART -->
+  <div class="card">
+    <h3>Sales Overview</h3>
+    <canvas id="chart" height="100"></canvas>
+  </div>
+
+</div>
+
+<script>
+
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+// NAVIGATION
+function go(page) {
+  window.location.href = page;
+}
+
+function goToStockHistory() {
+  window.location.href = "stock_history.html";
+}
+
+function goToSalesHistory() {
+  window.location.href = "sales_history.html";
+}
+
+function goToAlerts() {
+  window.location.href = "alerts.html";
+}
+
+// LOGOUT
+function logout() {
+  localStorage.removeItem("token");
+  window.location.href = "index.html";
+}
+
+// SEARCH
+function goToSearch() {
+  const query = document.getElementById("searchInput").value;
+
+  if (!query) {
+    alert("Enter product name");
+    return;
+  }
+
+  window.location.href = `search.html?q=${query}`;
+}
+
+// ALERT COUNT
+async function loadAlertCount() {
+  const res = await fetch(`${API_URL}/alerts`);
+  const data = await res.json();
+
+  const badge = document.getElementById("alertCount");
+  const count = data.length;
+
+  badge.innerText = count;
+
+  if (count === 0) {
+    badge.style.display = "none";
+  } else {
+    badge.style.display = "inline-block";
+  }
+}
+
+// TODAY SALES
+async function loadTodaySales() {
+  const res = await fetch(`${API_URL}/sales/`);
+  const data = await res.json();
+
+  const today = new Date().toLocaleDateString();
+  let total = 0;
+
+  data.forEach(s => {
+    const saleDate = new Date(s.created_at).toLocaleDateString();
+    if (saleDate === today) {
+      total += s.quantity;
+    }
+  });
+
+  document.getElementById("todaySales").innerText = total;
+}
+
+// CHART
+async function loadChart() {
+  const res = await fetch(`${API_URL}/sales/`);
+  const data = await res.json();
+
+  const map = {};
+
+  data.forEach(s => {
+    const date = new Date(s.created_at).toLocaleDateString();
+    map[date] = (map[date] || 0) + s.quantity;
+  });
+
+  new Chart(document.getElementById("chart"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(map),
+      datasets: [{
+        label: "Sales",
+        data: Object.values(map)
+      }]
+    }
+  });
+}
+
+// LOAD
+window.onload = function() {
+  loadAlertCount();
+  loadTodaySales();
+  loadChart();
+};
+
+// AUTO REFRESH ALERTS
+setInterval(loadAlertCount, 10000);
+
+</script>
+
+</body>
+</html>

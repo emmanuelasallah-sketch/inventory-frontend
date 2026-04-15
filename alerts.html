@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alerts Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .low { border-left: 5px solid orange; }
+    .expiring { border-left: 5px solid blue; }
+    .expired { border-left: 5px solid red; }
+
+    button {
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<button onclick="goBack()">⬅ Back to Dashboard</button>
+
+<h2>Alerts Dashboard</h2>
+
+<div class="section">
+  <h3>⚠ Low Stock</h3>
+  <div id="lowStock"></div>
+</div>
+
+<div class="section">
+  <h3>⏳ Expiring Soon</h3>
+  <div id="expiring"></div>
+</div>
+
+<div class="section">
+  <h3>❌ Expired</h3>
+  <div id="expired"></div>
+</div>
+
+<script>
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+function goBack() {
+  window.location.href = "dashboard.html";
+}
+
+async function loadAlerts() {
+  const res = await fetch(`${API_URL}/alerts`);
+  const data = await res.json();
+
+  const lowStockDiv = document.getElementById("lowStock");
+  const expiringDiv = document.getElementById("expiring");
+  const expiredDiv = document.getElementById("expired");
+
+  lowStockDiv.innerHTML = "";
+  expiringDiv.innerHTML = "";
+  expiredDiv.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    lowStockDiv.innerHTML = "<p>No alerts</p>";
+    return;
+  }
+
+  data.forEach(a => {
+    let html = `<div class="card">
+      <p><strong>${a.product}</strong></p>
+    </div>`;
+
+    if (a.type === "low_stock") {
+      lowStockDiv.innerHTML += `<div class="card low">${html}</div>`;
+    }
+
+    if (a.type === "expiring_soon") {
+      expiringDiv.innerHTML += `<div class="card expiring">${html}</div>`;
+    }
+
+    if (a.type === "expired") {
+      expiredDiv.innerHTML += `<div class="card expired">${html}</div>`;
+    }
+  });
+}
+
+window.onload = function() {
+  loadAlerts();
+};
+
+container.innerHTML = "Loading...";
+</script>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Product</title>
+</head>
+
+<body>
+  <h2>Add Product</h2>
+
+  <input id="name" placeholder="Name"><br><br>
+  <input id="price" placeholder="Price"><br><br>
+  <input id="stock" placeholder="Stock"><br><br>
+
+  <button onclick="submitProduct()">Save</button>
+
+  <script src="js/api.js"></script>
+  <script>
+        const user = localStorage.getItem("user");
+    if (!user) {
+        window.location.href = "index.html";
+    }
+    async function submitProduct() {
+      const name = document.getElementById("name").value;
+      const price = parseFloat(document.getElementById("price").value);
+      const stock = parseInt(document.getElementById("stock").value);
+
+      await addProduct({ name, price, stock });
+
+      alert("Product added");
+      window.location.href = "products.html";
+    }
+  </script>
+</body>
+</html>

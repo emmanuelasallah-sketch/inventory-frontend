@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stock History</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    button {
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<button onclick="goBack()">⬅ Back to Dashboard</button>
+
+<h2>Stock History</h2>
+<input type="text" id="search" placeholder="Search product..." oninput="filterHistory()">
+<button onclick="goToSearch()">Search</button>
+<div id="history"></div>
+
+<script>
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+// 🔙 BACK BUTTON
+function goBack() {
+  window.location.href = "dashboard.html";
+}
+
+// 📦 LOAD STOCK HISTORY
+async function loadHistory() {
+  const res = await fetch(`${API_URL}/stock_history`);
+  const data = await res.json();
+
+  const container = document.getElementById("history");
+  container.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p>No history available</p>";
+    return;
+  }
+
+  data.forEach(function(h) {
+    container.innerHTML += `
+      <div class="card">
+        <p><strong>${h.name}</strong></p>
+        <p>Added: ${h.quantity_added}</p>
+        <p>Date: ${new Date(h.created_at).toLocaleString()}</p>
+      </div>
+    `;
+  });
+}
+
+// 🚀 LOAD ON PAGE OPEN
+window.onload = function() {
+  loadHistory();
+};
+
+container.innerHTML = "Loading...";
+</script>
+
+</body>
+</html>
