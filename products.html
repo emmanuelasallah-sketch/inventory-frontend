@@ -61,7 +61,6 @@
   <button class="secondary" onclick="goToDashboard()">⬅ Dashboard</button>
 </div>
 
-<!-- FORM -->
 <div class="form-row">
   <input id="name" placeholder="Product Name">
 
@@ -87,7 +86,6 @@
   <button class="secondary" onclick="clearForm()">Clear</button>
 </div>
 
-<!-- MESSAGE -->
 <div id="message" class="box"></div>
 
 <script>
@@ -114,7 +112,7 @@ function loadCategoryDropdown() {
 
 // ✅ FIXED ADD PRODUCT
 async function addProduct() {
-  const name = document.getElementById("name").value;
+  const name = document.getElementById("name").value.trim();
   const size = document.getElementById("size").value;
   const category = document.getElementById("category").value;
   const price = parseFloat(document.getElementById("price").value);
@@ -123,8 +121,10 @@ async function addProduct() {
 
   const message = document.getElementById("message");
 
-  if (!name || !size || !price || !stock) {
-    message.innerHTML = "Fill all required fields";
+  console.log({ name, size, price, stock }); // DEBUG
+
+  if (!name || !size || size === "" || isNaN(price) || isNaN(stock)) {
+    message.innerHTML = "Fill all required fields correctly";
     message.style.color = "red";
     return;
   }
@@ -146,6 +146,7 @@ async function addProduct() {
     });
 
     const data = await res.json();
+    console.log("BACKEND RESPONSE:", data); // DEBUG
 
     if (data.detail || data.error) {
       message.innerHTML = data.detail || data.error;
@@ -157,7 +158,8 @@ async function addProduct() {
     }
 
   } catch (err) {
-    message.innerHTML = "❌ Error adding product";
+    console.log("FULL ERROR:", err);
+    message.innerHTML = "❌ Failed to connect to server";
     message.style.color = "red";
   }
 }
