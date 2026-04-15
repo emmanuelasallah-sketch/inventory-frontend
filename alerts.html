@@ -68,22 +68,21 @@ function goBack() {
   window.location.href = "dashboard.html";
 }
 
-async function loadAlerts() {
-  const res = await fetch(`${API_URL}/alerts`);
+async function loadAlertCount() {
+  const res = await fetch(`${API_URL}/products/alerts`);
   const data = await res.json();
 
-  const lowStockDiv = document.getElementById("lowStock");
-  const expiringDiv = document.getElementById("expiring");
-  const expiredDiv = document.getElementById("expired");
+  const badge = document.getElementById("alertCount");
+  const count = data.length;
 
-  lowStockDiv.innerHTML = "";
-  expiringDiv.innerHTML = "";
-  expiredDiv.innerHTML = "";
+  badge.innerText = count;
 
-  if (!data || data.length === 0) {
-    lowStockDiv.innerHTML = "<p>No alerts</p>";
-    return;
+  if (count === 0) {
+    badge.style.display = "none";
+  } else {
+    badge.style.display = "inline-block";
   }
+
 
   data.forEach(a => {
     let html = `<div class="card">

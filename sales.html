@@ -1,104 +1,136 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Stock History</title>
+  <title>POS Cart System</title>
 
   <style>
-    body {
-      font-family: Arial;
-      background: #f4f6f8;
-      padding: 20px;
-    }
+    body { font-family: Arial; padding: 20px; background: #f4f6f8; }
+    input, select { padding: 8px; margin: 5px; }
+    button { padding: 8px 12px; background: green; color: white; border: none; cursor: pointer; }
 
-    input {
-      padding: 8px;
-      width: 250px;
-      margin-bottom: 15px;
-    }
-
-    .card {
+    .cart {
+      margin-top: 20px;
       background: white;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 8px;
+      padding: 10px;
+      border-radius: 6px;
     }
 
-    button {
-      margin-bottom: 20px;
-      padding: 8px 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
+    .item {
+      border-bottom: 1px solid #ddd;
+      padding: 5px;
+    }
+
+    .total {
+      font-weight: bold;
+      font-size: 18px;
     }
   </style>
 </head>
 
 <body>
 
-<button onclick="goBack()">⬅ Back to Dashboard</button>
+<h2>POS System</h2>
 
-<h2>Stock History</h2>
+<input type="text" id="product" placeholder="Product name">
+<select id="size">
+  <option value="">Select Size</option>
+    <option>Big</option>
+    <option>Medium</option>
+    <option>Small</option>
+</select>
+<input type="number" id="qty" placeholder="Quantity">
 
-<input type="text" id="search" placeholder="Search product..." oninput="filterHistory()">
+<button onclick="addToCart()">Add to Cart</button>
 
-<div id="history"></div>
+<div class="cart">
+  <h3>Cart</h3>
+  <div id="cartItems"></div>
+  <p class="total" id="total"></p>
+</div>
+
+<button onclick="checkout()">Checkout</button>
+
+<div id="message"></div>
 
 <script>
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
-let allHistory = [];
+let products = [];
+let cart = [];
 
-function goBack() {
-  window.location.href = "dashboard.html";
+async function loadProducts() {
+  const res = await fetch(`${API_URL}/products`);
+  products = await res.json();
 }
 
-// LOAD DATA
-async function loadHistory() {
-  const res = await fetch(`${API_URL}/stock_history`);
-  const data = await res.json();
+function addToCart() {
+  const name = document.getElementById("product").value;
+  const size = document.getElementById("size").value;
+  const qty = parseInt(document.getElementById("qty").value);
 
-  allHistory = data;
-  displayHistory(allHistory);
+  const product = products.find(p => p.name === name && p.size == size);
+
+  if (!product) return alert("Product not found");
+
+  cart.push({
+    product_name: name,
+    size: size,
+    quantity: qty,
+    price: product.price
+  });
+
+  renderCart();
 }
 
-// DISPLAY FUNCTION
-function displayHistory(data) {
-  const container = document.getElementById("history");
+function renderCart() {
+  const container = document.getElementById("cartItems");
   container.innerHTML = "";
 
-  if (!data || data.length === 0) {
-    container.innerHTML = "<p>No history available</p>";
-    return;
-  }
+  let total = 0;
 
-  data.forEach(function(h) {
+  cart.forEach((item, index) => {
+    const itemTotal = item.quantity * item.price;
+    total += itemTotal;
+
     container.innerHTML += `
-      <div class="card">
-        <p><strong>${h.name}</strong></p>
-        <p>Added: ${h.quantity_added}</p>
-        <p>Date: ${new Date(h.created_at).toLocaleString()}</p>
+      <div class="item">
+        ${item.product_name} (${item.size}) x${item.quantity} = ${itemTotal}
+        <button onclick="removeItem(${index})">❌</button>
       </div>
     `;
   });
+
+  document.getElementById("total").innerText = "Total: " + total;
 }
 
-// 🔍 FILTER FUNCTION
-function filterHistory() {
-  const query = document.getElementById("search").value.toLowerCase();
+function removeItem(index) {
+  cart.splice(index, 1);
+  renderCart();
+}
 
-  const filtered = allHistory.filter(function(h) {
-    return h.name.toLowerCase().includes(query);
+async function checkout() {
+  if (cart.length === 0) return alert("Cart is empty");
+
+  const res = await fetch(`${API_URL}/sales/checkout`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ items: cart })
   });
 
-  displayHistory(filtered);
+  const data = await res.json();
+
+  if (data.error) {
+    document.getElementById("message").innerText = data.error;
+  } else {
+    document.getElementById("message").innerText =
+      `Order #${data.order_id} completed. Total: ${data.total}`;
+
+    cart = [];
+    renderCart();
+  }
 }
 
-window.onload = function() {
-  loadHistory();
-};
-
-container.innerHTML = "Loading...";
+window.onload = loadProducts;
 </script>
 
 </body>
