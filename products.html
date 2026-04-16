@@ -7,48 +7,29 @@
     body {
       font-family: Arial;
       background: #f4f6f8;
-      margin: 0;
       padding: 40px;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    button {
-      padding: 10px 14px;
-      border: none;
-      cursor: pointer;
-      border-radius: 6px;
-    }
-
-    .primary {
-      background: #2563eb;
-      color: white;
-    }
-
-    .secondary {
-      background: #e5e7eb;
     }
 
     .form-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 10px;
     }
 
     input, select {
       padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      min-width: 120px;
     }
 
-    .box {
-      margin-top: 15px;
+    button {
+      padding: 8px 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 10px;
       font-weight: bold;
     }
   </style>
@@ -56,16 +37,13 @@
 
 <body>
 
-<div class="topbar">
-  <h2>Products</h2>
-  <button class="secondary" onclick="goToDashboard()">⬅ Dashboard</button>
-</div>
+<h2>Add Product</h2>
 
 <div class="form-row">
-  <input id="name" placeholder="Product Name">
-
+  <input id="name" placeholder="Name">
+  
   <select id="size">
-    <option value="">Select Size</option>
+    <option value="">Size</option>
     <option>Big</option>
     <option>Medium</option>
     <option>Small</option>
@@ -81,101 +59,102 @@
   <input id="expiry" type="date">
 </div>
 
-<div class="form-row">
-  <button class="primary" onclick="addProduct()">Add Product</button>
-  <button class="secondary" onclick="clearForm()">Clear</button>
-</div>
+<button onclick="addProduct()">Add Product</button>
 
-<div id="message" class="box"></div>
+<div id="message"></div>
+
+<hr>
+
+<h2>Products</h2>
+<div id="productList"></div>
 
 <script>
 
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
-// NAV
-function goToDashboard() {
-  window.location.href = "dashboard.html";
-}
+// ✅ LOAD CATEGORIES
+async function loadCategories() {
+  const res = await fetch(`${API_URL}/products/categories`);
+  const categories = await res.json();
 
-// CATEGORY
-const categories = ["Hair","Skin Care","Makeup","Fragrance","Hygienics"];
-
-function loadCategoryDropdown() {
   const select = document.getElementById("category");
-
   select.innerHTML = `<option value="">Select Category</option>`;
 
   categories.forEach(cat => {
-    select.innerHTML += `<option value="${cat}">${cat}</option>`;
+    select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
   });
 }
 
-// ✅ FIXED ADD PRODUCT
+// ✅ ADD PRODUCT
 async function addProduct() {
   const name = document.getElementById("name").value.trim();
   const size = document.getElementById("size").value;
-  const category = document.getElementById("category").value;
+  const category_id = document.getElementById("category").value;
   const price = parseFloat(document.getElementById("price").value);
   const stock = parseInt(document.getElementById("stock").value);
   const expiry = document.getElementById("expiry").value;
 
   const message = document.getElementById("message");
 
-  console.log({ name, size, price, stock }); // DEBUG
-
-  if (!name || !size || size === "" || isNaN(price) || isNaN(stock)) {
-    message.innerHTML = "Fill all required fields correctly";
+  if (!name || !size || isNaN(price) || isNaN(stock)) {
+    message.innerHTML = "Fill all fields";
     message.style.color = "red";
     return;
   }
 
-  try {
-    const res = await fetch(`${API_URL}/products/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: name,
-        size: size,
-        price: price,
-        stock: stock,
-        category: category,
-        expiry_date: expiry
-      })
-    });
+  const res = await fetch(`${API_URL}/products/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name,
+      size,
+      price,
+      stock,
+      category_id,
+      expiry_date: expiry
+    })
+  });
 
-    const data = await res.json();
-    console.log("BACKEND RESPONSE:", data); // DEBUG
+  const data = await res.json();
 
-    if (data.detail || data.error) {
-      message.innerHTML = data.detail || data.error;
-      message.style.color = "red";
-    } else {
-      message.innerHTML = "✅ Product added / stock updated";
-      message.style.color = "green";
-      clearForm();
-    }
-
-  } catch (err) {
-    console.log("FULL ERROR:", err);
-    message.innerHTML = "❌ Failed to connect to server";
+  if (data.detail || data.error) {
+    message.innerHTML = data.detail || data.error;
     message.style.color = "red";
+  } else {
+    message.innerHTML = "✅ Product added";
+    message.style.color = "green";
+    loadProducts();
   }
 }
 
-// CLEAR
-function clearForm() {
-  document.getElementById("name").value = "";
-  document.getElementById("size").value = "";
-  document.getElementById("category").value = "";
-  document.getElementById("price").value = "";
-  document.getElementById("stock").value = "";
-  document.getElementById("expiry").value = "";
+// ✅ LOAD PRODUCTS
+async function loadProducts() {
+  const res = await fetch(`${API_URL}/products/`);
+  const products = await res.json();
+
+  const container = document.getElementById("productList");
+  container.innerHTML = "";
+
+  products.forEach(p => {
+    container.innerHTML += `
+      <div style="background:white;padding:10px;margin:5px">
+        <b>${p.name}</b> (${p.size}) <br>
+        Category: ${p.category_name || "N/A"} <br>
+        Stock: ${p.stock} <br>
+        Price: ${p.price} <br>
+        Total Value: ${p.total_value}
+      </div>
+    `;
+  });
 }
 
-// LOAD
-window.onload = loadCategoryDropdown;
+// INIT
+window.onload = function() {
+  loadCategories();
+  loadProducts();
+};
 
 </script>
 

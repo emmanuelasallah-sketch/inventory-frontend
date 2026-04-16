@@ -1,136 +1,283 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>POS Cart System</title>
+  <title>Sales</title>
 
   <style>
-    body { font-family: Arial; padding: 20px; background: #f4f6f8; }
-    input, select { padding: 8px; margin: 5px; }
-    button { padding: 8px 12px; background: green; color: white; border: none; cursor: pointer; }
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
 
-    .cart {
-      margin-top: 20px;
+    input, select {
+      padding: 8px;
+      margin: 5px;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .secondary {
+      background: #6b7280;
+    }
+
+    .card {
       background: white;
       padding: 10px;
+      margin-top: 10px;
       border-radius: 6px;
     }
 
-    .item {
-      border-bottom: 1px solid #ddd;
-      padding: 5px;
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
     }
 
     .total {
-      font-weight: bold;
       font-size: 18px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .suggestions {
+      background: white;
+      border: 1px solid #ddd;
+      max-width: 200px;
+      position: absolute;
+    }
+
+    .suggestions div {
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    .suggestions div:hover {
+      background: #eee;
     }
   </style>
 </head>
 
 <body>
 
-<h2>POS System</h2>
+<button class="secondary" onclick="goBack()">⬅ Dashboard</button>
 
-<input type="text" id="product" placeholder="Product name">
-<select id="size">
-  <option value="">Select Size</option>
+<h2>🛒 Sales</h2>
+
+<!-- INPUT -->
+<div style="position:relative;">
+  <input id="name" placeholder="Product Name" oninput="showSuggestions()">
+
+  <div id="suggestions" class="suggestions"></div>
+
+  <select id="size">
+    <option value="">Size</option>
     <option>Big</option>
     <option>Medium</option>
     <option>Small</option>
-</select>
-<input type="number" id="qty" placeholder="Quantity">
+  </select>
+
+  <input id="quantity" type="number" placeholder="Qty">
+
+  <button onclick="checkStock()">Check</button>
+</div>
+
+<div id="stockInfo"></div>
 
 <button onclick="addToCart()">Add to Cart</button>
 
-<div class="cart">
-  <h3>Cart</h3>
-  <div id="cartItems"></div>
-  <p class="total" id="total"></p>
-</div>
+<hr>
 
-<button onclick="checkout()">Checkout</button>
+<h3>Cart</h3>
+<div id="cart"></div>
+
+<div class="total">Total: <span id="total">0</span></div>
+
+<button onclick="checkout()">✅ Complete Sale</button>
+
+<hr>
+
+<h3>📊 Today's Sales</h3>
+<div id="todaySales" class="card"></div>
 
 <div id="message"></div>
 
 <script>
+
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
-let products = [];
 let cart = [];
+let products = [];
+let currentProduct = null;
 
+// 🔙 BACK
+function goBack() {
+  window.location.href = "dashboard.html";
+}
+
+// 📦 LOAD PRODUCTS
 async function loadProducts() {
-  const res = await fetch(`${API_URL}/products`);
+  const res = await fetch(`${API_URL}/products/`);
   products = await res.json();
 }
 
-function addToCart() {
-  const name = document.getElementById("product").value;
+// 🔍 AUTO SUGGEST
+function showSuggestions() {
+  const input = document.getElementById("name").value.toLowerCase();
+  const box = document.getElementById("suggestions");
+
+  box.innerHTML = "";
+
+  if (!input) return;
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(input)
+  );
+
+  filtered.slice(0, 5).forEach(p => {
+    const div = document.createElement("div");
+    div.innerText = p.name;
+    div.onclick = () => {
+      document.getElementById("name").value = p.name;
+      box.innerHTML = "";
+    };
+    box.appendChild(div);
+  });
+}
+
+// 🔍 CHECK STOCK
+function checkStock() {
+  const name = document.getElementById("name").value;
   const size = document.getElementById("size").value;
-  const qty = parseInt(document.getElementById("qty").value);
 
-  const product = products.find(p => p.name === name && p.size == size);
+  const product = products.find(p =>
+    p.name.toLowerCase() === name.toLowerCase() &&
+    p.size === size
+  );
 
-  if (!product) return alert("Product not found");
+  const stockInfo = document.getElementById("stockInfo");
+
+  if (!product) {
+    stockInfo.innerHTML = "❌ Product not found";
+    currentProduct = null;
+    return;
+  }
+
+  currentProduct = product;
+
+  stockInfo.innerHTML = `
+    Stock: ${product.stock} <br>
+    Price: ${product.price}
+  `;
+}
+
+// ➕ ADD TO CART
+function addToCart() {
+  const qty = parseInt(document.getElementById("quantity").value);
+
+  if (!currentProduct || !qty) {
+    alert("Check product first");
+    return;
+  }
+
+  if (qty > currentProduct.stock) {
+    alert("Not enough stock");
+    return;
+  }
 
   cart.push({
-    product_name: name,
-    size: size,
+    product_name: currentProduct.name,
+    size: currentProduct.size,
     quantity: qty,
-    price: product.price
+    price: currentProduct.price
   });
 
   renderCart();
 }
 
+// 🧾 RENDER CART
 function renderCart() {
-  const container = document.getElementById("cartItems");
+  const container = document.getElementById("cart");
   container.innerHTML = "";
 
   let total = 0;
 
   cart.forEach((item, index) => {
-    const itemTotal = item.quantity * item.price;
-    total += itemTotal;
+    const subtotal = item.price * item.quantity;
+    total += subtotal;
 
     container.innerHTML += `
-      <div class="item">
-        ${item.product_name} (${item.size}) x${item.quantity} = ${itemTotal}
+      <div class="cart-item card">
+        ${item.product_name} (${item.size}) 
+        x${item.quantity} = ${subtotal}
         <button onclick="removeItem(${index})">❌</button>
       </div>
     `;
   });
 
-  document.getElementById("total").innerText = "Total: " + total;
+  document.getElementById("total").innerText = total;
 }
 
+// ❌ REMOVE
 function removeItem(index) {
   cart.splice(index, 1);
   renderCart();
 }
 
+// 💳 CHECKOUT
 async function checkout() {
-  if (cart.length === 0) return alert("Cart is empty");
+  if (cart.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
 
-  const res = await fetch(`${API_URL}/sales/checkout`, {
+  const res = await fetch(`${API_URL}/sales/`, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({ items: cart })
   });
 
   const data = await res.json();
+  const message = document.getElementById("message");
 
-  if (data.error) {
-    document.getElementById("message").innerText = data.error;
+  if (data.error || data.detail) {
+    message.innerHTML = data.error || data.detail;
+    message.style.color = "red";
   } else {
-    document.getElementById("message").innerText =
-      `Order #${data.order_id} completed. Total: ${data.total}`;
-
+    message.innerHTML = "✅ Sale completed";
+    message.style.color = "green";
     cart = [];
     renderCart();
+    loadTodaySales();
   }
 }
 
-window.onload = loadProducts;
+// 📊 TODAY SALES
+async function loadTodaySales() {
+  const res = await fetch(`${API_URL}/sales/today`);
+  const data = await res.json();
+
+  document.getElementById("todaySales").innerHTML = `
+    Date: ${data.date} <br>
+    Items Sold: ${data.total_items_sold}
+  `;
+}
+
+// INIT
+window.onload = function() {
+  loadProducts();
+  loadTodaySales();
+};
+
 </script>
 
 </body>
