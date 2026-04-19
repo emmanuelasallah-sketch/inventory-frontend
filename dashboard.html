@@ -3,12 +3,8 @@
 <head>
   <title>Dashboard</title>
 
-  <script>
-    const token = localStorage.getItem("token");
-    if (!token) window.location.href = "index.html";
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -16,17 +12,15 @@
       margin: 0;
       font-family: Arial;
       display: flex;
+      background: #f4f6f8;
     }
 
-    /* Sidebar */
     .sidebar {
       width: 190px;
       background: #111;
       color: white;
       height: 100vh;
       position: fixed;
-      top: 0;
-      left: 0;
       padding: 10px;
     }
 
@@ -35,7 +29,6 @@
     }
 
     .sidebar button {
-      display: block;
       width: 100%;
       margin: 10px 0;
       padding: 10px;
@@ -50,23 +43,18 @@
       background: #333;
     }
 
-    /* Main */
     .main {
       margin-left: 200px;
       padding: 20px;
-      background: #f4f6f8;
-      min-height: 100vh;
       width: 100%;
     }
 
-    /* Topbar */
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    /* Alert */
     .alert-box {
       position: relative;
       cursor: pointer;
@@ -104,84 +92,35 @@
       margin-top: 20px;
       border-radius: 8px;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
+    button {
+      min-height: 40px;
+    }
 
-  body {
-    padding: 10px;
-  }
+    h2, h3 {
+      font-size: 20px;
+    }
 
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
 
-  .row {
-    flex-direction: column;
-  }
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+      }
 
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
+      .main {
+        margin-left: 0;
+      }
 
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-.card {
-  background: white;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 8px;
-  word-wrap: break-word;
-}
-
-.grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.card {
-  flex: 1;
-  min-width: 150px;
-}
-.card {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
+      input, button {
+        width: 100%;
+      }
+    }
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
@@ -193,9 +132,9 @@ h2, h3 {
   <button onclick="go('products.html')">Products</button>
   <button onclick="go('sales.html')">Sales</button>
   <button onclick="go('categories.html')">Categories</button>
-  <button onclick="goToStockHistory()">Stock History</button>
-  <button onclick="goToSalesHistory()">Sales History</button>
-  <button onclick="goToAlerts()">Alerts</button>
+  <button onclick="go('stock_history.html')">Stock History</button>
+  <button onclick="go('sales_history.html')">Sales History</button>
+  <button onclick="go('alerts.html')">Alerts</button>
 
   <button onclick="logout()">Logout</button>
 </div>
@@ -203,122 +142,80 @@ h2, h3 {
 <!-- MAIN -->
 <div class="main">
 
-  <!-- TOPBAR -->
   <div class="topbar">
     <h1>Dashboard</h1>
 
-    <div class="alert-box" onclick="goToAlerts()">
+    <div class="alert-box" onclick="go('alerts.html')">
       🔔
       <span id="alertCount" class="badge">0</span>
     </div>
   </div>
 
-  <!-- SEARCH -->
   <input id="searchInput" placeholder="Search product">
   <button class="search" onclick="goToSearch()">Search</button>
 
-  <!-- WELCOME -->
-  <h3>Welcome</h3>
-  <p>Select a section from the sidebar</p>
-
-  <!-- SALES TODAY -->
   <div class="card">
     <h3>Today's Sales</h3>
     <h2 id="todaySales">0</h2>
   </div>
 
-  <!-- CHART -->
   <div class="card">
     <h3>Sales Overview</h3>
-    <canvas id="chart" height="100"></canvas>
+    <canvas id="chart"></canvas>
   </div>
 
 </div>
 
 <script>
 
-const API_URL = "https://inventory-system-eipk.onrender.com";
+const API = "https://inventory-system-eipk.onrender.com";
 
-// NAVIGATION
+// NAV
 function go(page) {
   window.location.href = page;
 }
 
-function goToStockHistory() {
-  window.location.href = "stock_history.html";
-}
-
-function goToSalesHistory() {
-  window.location.href = "sales_history.html";
-}
-
-function goToAlerts() {
-  window.location.href = "alerts.html";
-}
-
-// LOGOUT
 function logout() {
   localStorage.removeItem("token");
   window.location.href = "index.html";
 }
 
-// SEARCH
 function goToSearch() {
-  const query = document.getElementById("searchInput").value;
-
-  if (!query) {
-    alert("Enter product name");
-    return;
-  }
-
-  window.location.href = `search.html?q=${query}`;
+  const q = document.getElementById("searchInput").value;
+  if (!q) return alert("Enter product name");
+  window.location.href = `search.html?q=${q}`;
 }
 
-// ALERT COUNT
-async function loadAlertCount() {
-  const res = await fetch(`${API_URL}/alerts`);
+// ALERTS
+async function loadAlerts() {
+  const res = await fetch(`${API}/products/alerts`);
   const data = await res.json();
 
   const badge = document.getElementById("alertCount");
-  const count = data.length;
+  badge.innerText = data.length;
 
-  badge.innerText = count;
-
-  if (count === 0) {
-    badge.style.display = "none";
-  } else {
-    badge.style.display = "inline-block";
-  }
+  badge.style.display = data.length ? "inline-block" : "none";
 }
 
-// TODAY SALES
+// TODAY SALES (FIXED)
 async function loadTodaySales() {
-  const res = await fetch(`${API_URL}/sales/`);
+  const res = await fetch(`${API}/sales-summary/today`);
   const data = await res.json();
 
-  const today = new Date().toLocaleDateString();
-  let total = 0;
-
-  data.forEach(s => {
-    const saleDate = new Date(s.created_at).toLocaleDateString();
-    if (saleDate === today) {
-      total += s.quantity;
-    }
-  });
-
-  document.getElementById("todaySales").innerText = total;
+  document.getElementById("todaySales").innerText =
+    data.total_units_sold || 0;
 }
 
-// CHART
+// CHART (SAFE AGGREGATION)
 async function loadChart() {
-  const res = await fetch(`${API_URL}/sales/`);
+  const res = await fetch(`${API}/sales/`);
   const data = await res.json();
 
   const map = {};
 
   data.forEach(s => {
-    const date = new Date(s.created_at).toLocaleDateString();
-    map[date] = (map[date] || 0) + s.quantity;
+    const date = new Date(s.created_at).toISOString().split("T")[0];
+    map[date] = (map[date] || 0) + (s.quantity_sold || 0);
   });
 
   new Chart(document.getElementById("chart"), {
@@ -333,15 +230,15 @@ async function loadChart() {
   });
 }
 
-// LOAD
-window.onload = function() {
-  loadAlertCount();
+// INIT
+window.onload = function () {
+  loadAlerts();
   loadTodaySales();
   loadChart();
 };
 
-// AUTO REFRESH ALERTS
-setInterval(loadAlertCount, 10000);
+// refresh alerts
+setInterval(loadAlerts, 10000);
 
 </script>
 

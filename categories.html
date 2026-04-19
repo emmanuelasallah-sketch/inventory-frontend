@@ -2,22 +2,23 @@
 <html>
 <head>
   <title>Categories</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
       font-family: Arial;
       background: #f4f6f8;
-      padding: 30px;
+      padding: 20px;
     }
 
     .topbar {
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
+      gap: 10px;
+      align-items: center;
     }
 
     input, button {
-      padding: 8px;
+      padding: 10px;
       border-radius: 6px;
       border: 1px solid #ddd;
     }
@@ -27,132 +28,62 @@
       color: white;
       border: none;
       cursor: pointer;
+      min-height: 40px;
     }
 
-    .card {
+    .category {
       background: white;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 10px;
     }
 
-    .actions button {
-      margin-left: 5px;
-      background: #6b7280;
+    .product {
+      background: #f9fafb;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
     }
-
-    .delete {
-      background: red !important;
-    }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
-
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
-
-  body {
-    padding: 10px;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
 <div class="topbar">
-  <h2>Categories</h2>
   <button onclick="goBack()">⬅ Dashboard</button>
+  <h2>Categories</h2>
 </div>
 
-<!-- ADD -->
-<div>
-  <input id="name" placeholder="New category">
+<!-- ✅ ADD CATEGORY (RESTORED) -->
+<div style="margin-top:10px;">
+  <input id="newCategory" placeholder="New category">
   <button onclick="addCategory()">Add</button>
 </div>
 
-<div id="list"></div>
+<!-- ✅ SEARCH (KEPT) -->
+<div style="margin-top:15px;">
+  <input id="search" placeholder="Search product">
+  <button onclick="loadData()">Search</button>
+</div>
+
+<!-- CONTAINER -->
+<div id="container"></div>
 
 <script>
-
 const API = "https://inventory-system-eipk.onrender.com";
 
-// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// LOAD
-async function load() {
-  const res = await fetch(`${API}/categories/`);
-  const data = await res.json();
-
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  data.forEach(c => {
-    list.innerHTML += `
-      <div class="card">
-        <span>${c.name}</span>
-
-        <div class="actions">
-          <button onclick="editCategory('${c.id}')">Edit</button>
-          <button class="delete" onclick="deleteCategory('${c.id}')">Delete</button>
-        </div>
-      </div>
-    `;
-  });
-}
-
-// ADD
+// ✅ ADD CATEGORY (WORKING)
 async function addCategory() {
-  const name = document.getElementById("name").value;
+  const name = document.getElementById("newCategory").value;
+
+  if (!name) {
+    alert("Enter category name");
+    return;
+  }
 
   await fetch(`${API}/categories/`, {
     method: "POST",
@@ -160,38 +91,64 @@ async function addCategory() {
     body: JSON.stringify({ name })
   });
 
-  document.getElementById("name").value = "";
-  load();
+  document.getElementById("newCategory").value = "";
+  loadData();
 }
 
-// EDIT
-async function editCategory(id) {
-  const name = prompt("New name:");
+// ✅ LOAD EVERYTHING PROPERLY
+async function loadData() {
+  const search = document.getElementById("search").value.toLowerCase();
 
-  if (!name) return;
+  try {
+    const catRes = await fetch(`${API}/categories/`);
+    const categories = await catRes.json();
 
-  await fetch(`${API}/categories/${id}`, {
-    method: "PUT",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ name })
-  });
+    const prodRes = await fetch(`${API}/products/`);
+    let products = await prodRes.json();
 
-  load();
+    // SEARCH FILTER (IMPORTANT: does NOT remove categories)
+    if (search) {
+      products = products.filter(p =>
+        p.name.toLowerCase().includes(search)
+      );
+    }
+
+    const container = document.getElementById("container");
+    container.innerHTML = "";
+
+    categories.forEach(cat => {
+      const section = document.createElement("div");
+      section.className = "category";
+
+      section.innerHTML = `<h3>${cat.name}</h3>`;
+
+      // FIX: ensure matching works correctly
+      const items = products.filter(p => String(p.category_id) === String(cat.id));
+
+      if (items.length === 0) {
+        section.innerHTML += `<p>No products</p>`;
+      } else {
+        items.forEach(p => {
+          section.innerHTML += `
+            <div class="product">
+              <b>${p.name}</b> (${p.size})<br>
+              Stock: ${p.stock} | Price: ${p.price}
+            </div>
+          `;
+        });
+      }
+
+      container.appendChild(section);
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert("Error loading categories");
+  }
 }
 
-// DELETE
-async function deleteCategory(id) {
-  if (!confirm("Delete category?")) return;
-
-  await fetch(`${API}/categories/${id}`, {
-    method: "DELETE"
-  });
-
-  load();
-}
-
-window.onload = load;
-
+// INIT
+window.onload = loadData;
 </script>
 
 </body>

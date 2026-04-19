@@ -3,6 +3,8 @@
 <head>
   <title>Auth</title>
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
       font-family: Arial;
@@ -11,6 +13,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .card {
@@ -18,22 +21,31 @@
       padding: 25px;
       border-radius: 10px;
       width: 300px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
     }
 
     input {
-      width: 85%;
+      width: 100%;
       padding: 10px;
-      margin: 4px 0;
+      margin: 6px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
     }
 
     button {
-      width: 90%;
+      width: 100%;
       padding: 10px;
       margin-top: 10px;
       border: none;
       background: #2563eb;
       color: white;
       cursor: pointer;
+      border-radius: 6px;
+      min-height: 40px;
     }
 
     .toggle {
@@ -42,122 +54,109 @@
       cursor: pointer;
       color: #2563eb;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
+    #message {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
 
-  body {
-    padding: 10px;
-  }
+    /* MOBILE */
+    @media (max-width: 768px) {
+      .card {
+        width: 90%;
+      }
 
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
-
+      input, button {
+        font-size: 16px;
+      }
+    }
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
 <div class="card">
 
-<h2 id="title">Login</h2>
+  <h2 id="title">Login</h2>
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
 
-<button onclick="submitAuth()">Submit</button>
+  <button onclick="submitAuth()">Submit</button>
 
-<div class="toggle" onclick="toggleMode()">
-  Switch to Register
-</div>
+  <div id="message"></div>
+
+  <div class="toggle" onclick="toggleMode()">
+    Switch to Register
+  </div>
 
 </div>
 
 <script>
 
 let isLogin = true;
+const API = "https://inventory-system-eipk.onrender.com";
 
+// TOGGLE LOGIN / REGISTER
 function toggleMode() {
   isLogin = !isLogin;
-  document.getElementById("title").innerText = isLogin ? "Login" : "Register";
+
+  document.getElementById("title").innerText =
+    isLogin ? "Login" : "Register";
+
   document.querySelector(".toggle").innerText =
     isLogin ? "Switch to Register" : "Switch to Login";
+
+  document.getElementById("message").innerText = "";
 }
 
+// SUBMIT
 async function submitAuth() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
+  const message = document.getElementById("message");
 
-  const url = isLogin
-    ? "https://inventory-system-eipk.onrender.com/auth/login"
-    : "https://inventory-system-eipk.onrender.com/auth/register";
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(data.detail || "Error");
+  if (!email || !password) {
+    message.innerText = "Fill all fields";
+    message.style.color = "red";
     return;
   }
 
-  if (isLogin) {
-    localStorage.setItem("token", data.access_token);
-    window.location.href = "dashboard.html";
-  } else {
-    alert("Registered! Now login.");
-    toggleMode();
+  const url = isLogin
+    ? `${API}/auth/login`
+    : `${API}/auth/register`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      message.innerText = data.detail || "Error occurred";
+      message.style.color = "red";
+      return;
+    }
+
+    if (isLogin) {
+      localStorage.setItem("token", data.access_token);
+      window.location.href = "dashboard.html";
+    } else {
+      message.innerText = "Registered successfully. Now login.";
+      message.style.color = "green";
+      toggleMode();
+    }
+
+  } catch (err) {
+    message.innerText = "Network error";
+    message.style.color = "red";
   }
 }
-container.innerHTML = "Loading...";
+
 </script>
 
 </body>
