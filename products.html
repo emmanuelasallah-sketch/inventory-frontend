@@ -1,49 +1,78 @@
 <!DOCTYPE html>
+
 <html>
 <head>
   <title>Products</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    body { font-family: Arial; background: #f4f6f8; padding: 20px; }
-
-    .topbar { display: flex; gap: 10px; align-items: center; }
-
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 10px 0;
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
     }
 
-    input, select, button {
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     button {
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
       background: #2563eb;
       color: white;
-      border: none;
-      cursor: pointer;
       min-height: 40px;
     }
 
-    .secondary { background: #6b7280; }
+    .secondary {
+      background: #6b7280;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    /* Control widths */
+    #expiry { max-width: 160px; }
+    #search { max-width: 200px; }
+    #filterCategory { max-width: 180px; }
 
     .card {
       background: white;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
     }
 
+    .low-stock {
+      border-left: 5px solid red;
+    }
+
     @media (max-width: 768px) {
-      .row { flex-direction: column; }
-      input, select, button { width: 100%; }
+      .row {
+        flex-direction: column;
+      }
+
+      input, select, button {
+        width: 100%;
+      }
     }
   </style>
+
 </head>
 
 <body>
@@ -53,9 +82,11 @@
   <h2>Products</h2>
 </div>
 
-<!-- ADD PRODUCT -->
+<h3>Add Product</h3>
+
 <div class="row">
   <input id="name" placeholder="Name">
+
   <select id="size">
     <option value="">Size</option>
     <option>Big</option>
@@ -63,61 +94,118 @@
     <option>Small</option>
   </select>
 
-  <select id="category"></select>
+<select id="category"></select>
 
   <input id="price" type="number" placeholder="Price">
-  <input id="stock" type="number" placeholder="Stock">
+
+  <!-- Manual stock -->
+
+  <input id="stock" type="number" placeholder="Stock (manual)">
+
+  <!-- Pack system -->
+
+  <input id="pieces" type="number" placeholder="Pieces per pack">
+  <input id="packs" type="number" placeholder="Number of packs">
 </div>
 
 <div class="row">
   <input id="expiry" type="date">
-  <button onclick="addProduct()">Add</button>
-  <button class="secondary" onclick="clearForm()">Clear</button>
+  <button onclick="addProduct()">Add Product</button>
+  <button onclick="clearForm()">Clear</button>
 </div>
 
 <p id="message"></p>
 
 <hr>
 
-<!-- SEARCH (KEPT + WORKING) -->
 <div class="row">
-  <input id="search" placeholder="Search product">
-  <button onclick="searchProducts()">Search</button>
+  <input id="search" placeholder="Search..." oninput="filterProducts()">
+  <select id="filterCategory" onchange="filterProducts()"></select>
+  <button onclick="loadData()">Search</button>
 </div>
 
-<!-- LIST -->
 <div id="list"></div>
+
+
+<!-- EDIT MODAL -->
+<div id="editModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+
+  <div style="background:white; padding:20px; max-width:400px; margin:80px auto; border-radius:10px;">
+
+    <h3>Edit Product</h3>
+
+    <input id="edit_name" placeholder="Name"><br><br>
+
+    <select id="edit_size">
+      <option>Big</option>
+      <option>Medium</option>
+      <option>Small</option>
+    </select><br><br>
+
+    <select id="edit_category"></select><br><br>
+
+    <input id="edit_price" type="number" placeholder="Price"><br><br>
+
+    <input id="edit_stock" type="number" placeholder="Stock"><br><br>
+
+    <button onclick="updateProduct()">Save</button>
+    <button onclick="closeEdit()" style="background:#6b7280;">Cancel</button>
+
+  </div>
+</div>
 
 <script>
 const API = "https://inventory-system-eipk.onrender.com";
 
 let products = [];
 
+// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
 // LOAD CATEGORIES
 async function loadCategories() {
-  const res = await fetch(`${API}/categories`);
+  const res = await fetch(`${API}/categories/`);
   const data = await res.json();
 
-  const select = document.getElementById("category");
-  select.innerHTML = `<option value="">Category</option>`;
+  const c1 = document.getElementById("category");
+  const c2 = document.getElementById("filterCategory");
+
+  c1.innerHTML = `<option value="">Category</option>`;
+  c2.innerHTML = `<option value="">All Categories</option>`;
 
   data.forEach(c => {
-    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    c1.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    c2.innerHTML += `<option value="${c.id}">${c.name}</option>`;
   });
 }
 
 // ADD PRODUCT
 async function addProduct() {
+  const pieces = parseInt(document.getElementById("pieces").value) || 0;
+  const packs = parseInt(document.getElementById("packs").value) || 0;
+  const manualStock = parseInt(document.getElementById("stock").value) || 0;
+
+  let finalStock = 0;
+
+  if (pieces > 0 && packs > 0) {
+    finalStock = pieces * packs;
+  } else {
+    finalStock = manualStock;
+  }
+
+  if (finalStock <= 0) {
+    alert("Enter stock OR packs and pieces");
+    return;
+  }
+
   const body = {
     name: document.getElementById("name").value,
     size: document.getElementById("size").value,
     category_id: document.getElementById("category").value,
     price: document.getElementById("price").value,
-    stock: document.getElementById("stock").value,
+    stock: finalStock,
     expiry_date: document.getElementById("expiry").value
   };
 
@@ -130,18 +218,21 @@ async function addProduct() {
   const data = await res.json();
 
   document.getElementById("message").innerText =
-    data.message || data.detail;
+    data.message || data.detail || "Saved";
 
   loadProducts();
+  clearForm();
 }
 
-// CLEAR (ADDED WITHOUT REMOVING ANYTHING)
+// CLEAR
 function clearForm() {
   document.getElementById("name").value = "";
   document.getElementById("size").value = "";
   document.getElementById("category").value = "";
   document.getElementById("price").value = "";
   document.getElementById("stock").value = "";
+  document.getElementById("pieces").value = "";
+  document.getElementById("packs").value = "";
   document.getElementById("expiry").value = "";
 }
 
@@ -152,13 +243,22 @@ async function loadProducts() {
   render(products);
 }
 
-// SEARCH (KEPT)
-function searchProducts() {
-  const q = document.getElementById("search").value.toLowerCase();
+// FILTER
+function filterProducts() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const cat = document.getElementById("filterCategory").value;
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(q)
-  );
+  let filtered = products;
+
+  if (search) {
+    filtered = filtered.filter(p =>
+      p.name.toLowerCase().includes(search)
+    );
+  }
+
+  if (cat) {
+    filtered = filtered.filter(p => p.category_id === cat);
+  }
 
   render(filtered);
 }
@@ -170,13 +270,78 @@ function render(data) {
 
   data.forEach(p => {
     div.innerHTML += `
-      <div class="card">
+      <div class="card ${p.low_stock ? 'low-stock' : ''}">
         <b>${p.name}</b> (${p.size})<br>
         Stock: ${p.stock} | Price: ${p.price}<br>
-        Category: ${p.category_name || "N/A"}
+        Total: ${p.total_value}<br>
+        Category: ${p.category_name || "N/A"}<br><br>
+        <button onclick="openEdit('${p.id}', '${p.name}', '${p.size}', '${p.price}', '${p.stock}', '${p.category_id}')">Edit</button>
+        <button onclick="deleteProduct('${p.id}')">Delete</button>
       </div>
     `;
   });
+}
+
+// DELETE
+async function deleteProduct(id) {
+  await fetch(`${API}/products/${id}`, { method: "DELETE" });
+  loadProducts();
+}
+
+
+let currentEditId = null;
+
+async function openEdit(id, name, size, price, stock, category_id) {
+  currentEditId = id;
+
+  document.getElementById("edit_name").value = name;
+  document.getElementById("edit_size").value = size;
+  document.getElementById("edit_price").value = price;
+  document.getElementById("edit_stock").value = stock;
+
+  // load categories into modal dropdown
+  const res = await fetch(`${API}/categories/`);
+  const categories = await res.json();
+
+  const select = document.getElementById("edit_category");
+  select.innerHTML = "";
+
+  categories.forEach(c => {
+    select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+
+  select.value = category_id;
+
+  document.getElementById("editModal").style.display = "block";
+}
+
+
+async function updateProduct() {
+  const body = {
+    name: document.getElementById("edit_name").value,
+    size: document.getElementById("edit_size").value,
+    price: document.getElementById("edit_price").value,
+    stock: document.getElementById("edit_stock").value,
+    category_id: document.getElementById("edit_category").value
+  };
+
+  const res = await fetch(`${API}/products/${currentEditId}`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+
+  alert(data.message || "Updated");
+
+  closeEdit();
+  loadProducts();
+}
+
+
+function closeEdit() {
+  document.getElementById("editModal").style.display = "none";
 }
 
 // INIT

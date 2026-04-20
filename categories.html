@@ -62,7 +62,7 @@
 
 <!-- ✅ SEARCH (KEPT) -->
 <div style="margin-top:15px;">
-  <input id="search" placeholder="Search product">
+  <input id="search" placeholder="Search product" oninput="filterProducts()">
   <button onclick="loadData()">Search</button>
 </div>
 
@@ -96,64 +96,64 @@ async function addCategory() {
 }
 
 // ✅ LOAD EVERYTHING PROPERLY
+let cachedProducts = [];
+let cachedCategories = [];
+
 async function loadData() {
-  const search = document.getElementById("search").value.toLowerCase();
-
   try {
-    // FETCH CATEGORIES
     const catRes = await fetch(`${API}/categories/`);
-    const categories = await catRes.json();
+    cachedCategories = await catRes.json();
 
-    // FETCH PRODUCTS
     const prodRes = await fetch(`${API}/products/`);
-    let products = await prodRes.json();
+    cachedProducts = await prodRes.json();
 
-    // 🛡️ SAFETY FIX (VERY IMPORTANT)
-    if (!Array.isArray(products)) {
-      console.error("Products is not array:", products);
-      products = [];
-    }
+    // 🛡 safety
+    if (!Array.isArray(cachedProducts)) cachedProducts = [];
+    if (!Array.isArray(cachedCategories)) cachedCategories = [];
 
-    // SAFE SEARCH FILTER
-    if (search) {
-      products = products.filter(p =>
-        (p.name || "").toLowerCase().includes(search)
-      );
-    }
-
-    const container = document.getElementById("container");
-    container.innerHTML = "";
-
-    categories.forEach(cat => {
-      const section = document.createElement("div");
-      section.className = "category";
-
-      section.innerHTML = `<h3>${cat.name}</h3>`;
-
-      const items = products.filter(p =>
-        String(p.category_id) === String(cat.id)
-      );
-
-      if (items.length === 0) {
-        section.innerHTML += `<p>No products</p>`;
-      } else {
-        items.forEach(p => {
-          section.innerHTML += `
-            <div class="product">
-              <b>${p.name}</b> (${p.size || ""})<br>
-              Stock: ${p.stock || 0} | Price: ${p.price || 0}
-            </div>
-          `;
-        });
-      }
-
-      container.appendChild(section);
-    });
+    renderFiltered(""); // first render
 
   } catch (err) {
-    console.error("REAL ERROR:", err);
-    alert("Check console (F12)");
+    console.error("Load error:", err);
+    alert("Failed to load data");
   }
+}
+
+function filterProducts() {
+  const search = document.getElementById("search").value.toLowerCase();
+
+  renderFiltered(search);
+}
+
+function renderFiltered(search) {
+  const container = document.getElementById("container");
+  container.innerHTML = "";
+
+  cachedCategories.forEach(cat => {
+    const section = document.createElement("div");
+    section.className = "category";
+
+    section.innerHTML = `<h3>${cat.name}</h3>`;
+
+    const items = cachedProducts.filter(p =>
+      String(p.category_id) === String(cat.id) &&
+      (p.name || "").toLowerCase().includes(search)
+    );
+
+    if (items.length === 0) {
+      section.innerHTML += `<p>No products</p>`;
+    } else {
+      items.forEach(p => {
+        section.innerHTML += `
+          <div class="product">
+            ${p.name} (${p.size})
+          </div>
+        `;
+      });
+    }
+
+    container.appendChild(section);
+  });
 }
 // INIT
 window.onload = loadData;

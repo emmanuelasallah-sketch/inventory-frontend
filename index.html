@@ -3,6 +3,10 @@
 <head>
   <title>Auth</title>
 
+  <!-- 🚀 SPEED BOOST -->
+  <link rel="preconnect" href="https://inventory-system-eipk.onrender.com">
+
+  <!-- 📱 MOBILE -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -26,6 +30,7 @@
 
     h2 {
       text-align: center;
+      margin-bottom: 15px;
     }
 
     input {
@@ -38,7 +43,7 @@
 
     button {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
       border: none;
       background: #2563eb;
@@ -48,6 +53,11 @@
       min-height: 40px;
     }
 
+    button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
     .toggle {
       text-align: center;
       margin-top: 10px;
@@ -55,20 +65,10 @@
       color: #2563eb;
     }
 
-    #message {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    /* MOBILE */
+    /* 📱 MOBILE */
     @media (max-width: 768px) {
       .card {
         width: 90%;
-      }
-
-      input, button {
-        font-size: 16px;
       }
     }
   </style>
@@ -77,85 +77,87 @@
 <body>
 
 <div class="card">
-
   <h2 id="title">Login</h2>
 
-  <input id="email" placeholder="Email">
+  <input id="email" placeholder="Email" autofocus>
   <input id="password" type="password" placeholder="Password">
 
-  <button onclick="submitAuth()">Submit</button>
-
-  <div id="message"></div>
+  <button id="submitBtn" onclick="submitAuth()">Submit</button>
 
   <div class="toggle" onclick="toggleMode()">
     Switch to Register
   </div>
-
 </div>
 
 <script>
 
 let isLogin = true;
-const API = "https://inventory-system-eipk.onrender.com";
 
-// TOGGLE LOGIN / REGISTER
+// 🔄 TOGGLE LOGIN / REGISTER
 function toggleMode() {
   isLogin = !isLogin;
 
-  document.getElementById("title").innerText =
-    isLogin ? "Login" : "Register";
-
+  document.getElementById("title").innerText = isLogin ? "Login" : "Register";
   document.querySelector(".toggle").innerText =
     isLogin ? "Switch to Register" : "Switch to Login";
-
-  document.getElementById("message").innerText = "";
 }
 
-// SUBMIT
+// 🚀 AUTH FUNCTION (FAST + CLEAN)
 async function submitAuth() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const message = document.getElementById("message");
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const button = document.getElementById("submitBtn");
 
   if (!email || !password) {
-    message.innerText = "Fill all fields";
-    message.style.color = "red";
+    alert("Enter email and password");
     return;
   }
 
   const url = isLogin
-    ? `${API}/auth/login`
-    : `${API}/auth/register`;
+    ? "https://inventory-system-eipk.onrender.com/auth/login"
+    : "https://inventory-system-eipk.onrender.com/auth/register";
 
   try {
+    // ⚡ INSTANT FEEDBACK
+    button.innerText = "Processing...";
+    button.disabled = true;
+
     const res = await fetch(url, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ email, password })
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      message.innerText = data.detail || "Error occurred";
-      message.style.color = "red";
-      return;
+      throw new Error(data.detail || "Something went wrong");
     }
 
+    // ✅ SUCCESS
     if (isLogin) {
       localStorage.setItem("token", data.access_token);
       window.location.href = "dashboard.html";
     } else {
-      message.innerText = "Registered successfully. Now login.";
-      message.style.color = "green";
+      alert("Registered successfully. Please login.");
       toggleMode();
     }
 
   } catch (err) {
-    message.innerText = "Network error";
-    message.style.color = "red";
+    alert(err.message);
+  } finally {
+    // 🔄 RESET BUTTON
+    button.innerText = "Submit";
+    button.disabled = false;
   }
 }
+
+// ⌨️ ENTER KEY SUPPORT
+document.addEventListener("keypress", function(e) {
+  if (e.key === "Enter") submitAuth();
+});
 
 </script>
 
