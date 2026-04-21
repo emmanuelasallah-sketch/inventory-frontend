@@ -107,7 +107,8 @@
 </div>
 
 <div class="row">
-  <input id="expiry" type="date">
+  <p>Expiry Date</p>
+  <input id="expiry" type="date" >
   <button onclick="addProduct()">Add Product</button>
   <button onclick="clearForm()">Clear</button>
 </div>
@@ -201,7 +202,7 @@ async function addProduct() {
     price: document.getElementById("price").value,
     selling_price: document.getElementById("selling_price").value || null,
     stock: finalStock,
-    expiry_date: document.getElementById("expiry").value
+    expiry_date: document.getElementById("expiry").value || null
   };
 
   const res = await fetch(`${API}/products/`, {
