@@ -10,9 +10,19 @@
       padding: 20px;
     }
 
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .card {
       background: white;
-      padding: 15px;
+      padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
     }
@@ -26,179 +36,147 @@
       border: none;
       cursor: pointer;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
-
-  body {
-    padding: 10px;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
-
+    .empty {
+      margin-top: 20px;
+      color: gray;
+    }
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
-<h2>Search Results</h2>
+<div class="topbar">
+  <button onclick="goBack()">⬅ Back</button>
+  <h2>Search Results</h2>
+</div>
 
-<button onclick="goBack()">⬅ Back</button>
-
-<div id="results"></div>
+<div id="results">Loading...</div>
 
 <script>
 
-const API_URL = "https://inventory-system-eipk.onrender.com";
+const API = "https://inventory-system-eipk.onrender.com";
 
-// ================= LOAD RESULTS =================
-window.onload = async function() {
+// BACK
+function goBack() {
+  window.history.back();
+}
+
+// LOAD SEARCH RESULTS
+window.onload = async function () {
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q");
 
-  if (!query) {
-    document.getElementById("results").innerHTML = "<p>No search query</p>";
-    return;
-  }
-
-  const res = await fetch(`${API_URL}/products?search=${query}`);
-  const data = await res.json();
-
   const container = document.getElementById("results");
 
-  if (!Array.isArray(data) || data.length === 0) {
-    container.innerHTML = "<p>No products found</p>";
+  if (!query) {
+    container.innerHTML = "<p class='empty'>No search query provided</p>";
     return;
   }
 
-  data.forEach(function(p) {
+  try {
+    const res = await fetch(`${API}/products/`);
+    let data = await res.json();
 
-    let alerts = "";
-
-    if (p.low_stock) {
-      alerts += "<p style='color:red;'>⚠ Low Stock</p>";
+    // 🛡️ SAFETY CHECK
+    if (!Array.isArray(data)) {
+      console.error("API error:", data);
+      container.innerHTML = "<p class='empty'>Error loading products</p>";
+      return;
     }
 
-    if (p.expiry_status === "expiring_soon") {
-      alerts += "<p style='color:orange;'>⚠ Expiring Soon</p>";
-    }
+    // FILTER
+    const filtered = data.filter(p =>
+      (p.name || "").toLowerCase().includes(query.toLowerCase())
+    );
 
-    if (p.expiry_status === "expired") {
-      alerts += "<p style='color:red;'>❌ Expired</p>";
-    }
+    render(filtered, query);
 
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p class='empty'>Failed to load data</p>";
+  }
+};
+
+// RENDER RESULTS
+function render(data, query) {
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p class='empty'>No results for "${query}"</p>`;
+    return;
+  }
+
+  data.forEach(p => {
     container.innerHTML += `
       <div class="card">
         <h3>${p.name}</h3>
 
         <p>Size: ${p.size || "N/A"}</p>
-        <p>Price: ${p.price || "N/A"}</p>
         <p>Stock: ${p.stock ?? 0}</p>
-
-        ${alerts}
+        <p>Cost: ${p.price || 0}</p>
+        <p>Selling: ${p.selling_price || "N/A"}</p>
 
         <button onclick="sell('${p.name}', '${p.size}')">Sell</button>
         <button onclick="deleteProduct('${p.id}')">Delete</button>
       </div>
     `;
   });
-};
+}
 
-// ================= SELL =================
+// SELL
 async function sell(name, size) {
   const quantity = prompt("Enter quantity");
   if (!quantity) return;
 
-  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch(`${API}/products/sell`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        size,
+        quantity: parseInt(quantity)
+      })
+    });
 
-  const res = await fetch(`${API_URL}/products/sell`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + token
-    },
-    body: JSON.stringify({
-      name: name,
-      size: size,
-      quantity: parseInt(quantity)
-    })
-  });
+    const data = await res.json();
 
-  if (!res.ok) {
-    alert("Sale failed");
-    return;
-  }
-
-  alert("Sale recorded!");
-}
-
-// ================= DELETE =================
-async function deleteProduct(id) {
-  const token = localStorage.getItem("token");
-
-  await fetch(`${API_URL}/products/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": "Bearer " + token
+    if (!res.ok) {
+      alert(data.detail || "Sale failed");
+      return;
     }
-  });
 
-  alert("Deleted!");
-  location.reload();
+    alert("Sale recorded!");
+    location.reload();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error processing sale");
+  }
 }
 
-// ================= BACK =================
-function goBack() {
-  window.history.back();
+// DELETE
+async function deleteProduct(id) {
+  if (!confirm("Delete this product?")) return;
+
+  try {
+    await fetch(`${API}/products/${id}`, {
+      method: "DELETE"
+    });
+
+    alert("Deleted!");
+    location.reload();
+
+  } catch (err) {
+    console.error(err);
+    alert("Delete failed");
+  }
 }
-const container = document.getElementById("results");
-container.innerHTML = "Loading...";
+
 </script>
 
 </body>

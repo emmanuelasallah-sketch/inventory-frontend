@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Products</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
@@ -18,106 +17,62 @@
       margin-bottom: 20px;
     }
 
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+    }
+
     button {
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
       background: #2563eb;
       color: white;
+      border: none;
       cursor: pointer;
-      min-height: 40px;
     }
 
-    .secondary {
-      background: #6b7280;
-    }
-
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    input, select {
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-    }
-
-    .info {
-      margin-top: 20px;
+    .card {
       background: white;
-      padding: 15px;
+      padding: 12px;
+      margin-top: 10px;
       border-radius: 8px;
-    }
-
-    @media (max-width: 768px) {
-      .row {
-        flex-direction: column;
-      }
-
-      input, select, button {
-        width: 100%;
-      }
     }
   </style>
 </head>
 
 <body>
 
-<!-- TOP -->
 <div class="topbar">
-  <button class="secondary" onclick="goBack()">⬅ Dashboard</button>
+  <button onclick="goBack()">⬅ Dashboard</button>
   <h2>Products</h2>
 </div>
 
 <!-- ADD PRODUCT -->
 <h3>Add Product</h3>
 
-<div class="row">
+<div>
   <input id="name" placeholder="Name">
-
-  <select id="size">
-    <option value="">Size</option>
-    <option>Big</option>
-    <option>Medium</option>
-    <option>Small</option>
-  </select>
-
-  <!-- ✅ CATEGORY ONLY HERE -->
-  <select id="category">
-    <option value="">Optional Category</option>
-  </select>
-
+  <input id="size" placeholder="Size">
   <input id="price" type="number" placeholder="Cost Price">
   <input id="selling_price" type="number" placeholder="Selling Price (optional)">
-</div>
-
-<div class="row">
   <input id="stock" type="number" placeholder="Stock">
-  <input id="expiry" type="date">
 
   <button onclick="addProduct()">Add</button>
-  <button class="secondary" onclick="clearForm()">Clear</button>
+  <button onclick="clearForm()">Clear</button>
 </div>
-
-<p id="message"></p>
 
 <hr>
 
-<!-- 🔍 SEARCH (REDIRECT ONLY) -->
-<h3>Search Product</h3>
-
-<div class="row">
-  <input id="search" placeholder="Enter product name...">
-  <button onclick="handleSearch()">Search</button>
+<!-- SEARCH (REDIRECT ONLY) -->
+<div>
+  <input id="search" placeholder="Search product">
+  <button onclick="goToSearch()">Search</button>
 </div>
 
-<!-- EMPTY STATE -->
-<div id="info" class="info">
-  <p>🔍 Use the search above to find products.</p>
-</div>
+<hr>
+
+<!-- OPTIONAL: MANUAL LOAD BUTTON -->
+<button onclick="loadProducts()">Load All Products</button>
+
+<div id="list"></div>
 
 <script>
 
@@ -128,24 +83,16 @@ function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// LOAD CATEGORIES
-async function loadCategories() {
-  try {
-    const res = await fetch(`${API}/categories/`);
-    const data = await res.json();
+// 🔍 REDIRECT SEARCH (IMPORTANT CHANGE)
+function goToSearch() {
+  const query = document.getElementById("search").value.trim();
 
-    const select = document.getElementById("category");
-    select.innerHTML = `<option value="">Optional Category</option>`;
-
-    if (Array.isArray(data)) {
-      data.forEach(c => {
-        select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
-      });
-    }
-
-  } catch (err) {
-    console.error("Category error:", err);
+  if (!query) {
+    alert("Enter product name");
+    return;
   }
+
+  window.location.href = `search.html?q=${encodeURIComponent(query)}`;
 }
 
 // ADD PRODUCT
@@ -153,67 +100,64 @@ async function addProduct() {
   const body = {
     name: document.getElementById("name").value,
     size: document.getElementById("size").value,
-    category_id: document.getElementById("category").value || null,
     price: document.getElementById("price").value,
     selling_price: document.getElementById("selling_price").value,
-    stock: document.getElementById("stock").value,
-    expiry_date: document.getElementById("expiry").value || null
+    stock: document.getElementById("stock").value
   };
 
   const res = await fetch(`${API}/products/`, {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
 
   const data = await res.json();
-
-  document.getElementById("message").innerText =
-    data.message || data.detail || "Saved";
-
-  clearForm();
-}
-
-// 🔍 SEARCH → REDIRECT
-async function handleSearch() {
-  const search = document.getElementById("search").value.toLowerCase();
-
-  if (!search) {
-    document.getElementById("list").innerHTML = "<p>Enter search term</p>";
-    return;
-  }
-
-  const res = await fetch(`${API}/products/`);
-  let data = await res.json();
-
-  // 🛡️ safety fix
-  if (!Array.isArray(data)) {
-    console.error("Not array:", data);
-    data = [];
-  }
-
-  const filtered = data.filter(p =>
-    (p.name || "").toLowerCase().includes(search)
-  );
-
-  render(filtered);
+  alert(data.message || "Saved");
 }
 
 // CLEAR FORM
 function clearForm() {
   document.getElementById("name").value = "";
   document.getElementById("size").value = "";
-  document.getElementById("category").value = "";
   document.getElementById("price").value = "";
   document.getElementById("selling_price").value = "";
   document.getElementById("stock").value = "";
-  document.getElementById("expiry").value = "";
 }
 
-// INIT
-window.onload = () => {
-  loadCategories();
-};
+// OPTIONAL: LOAD ALL PRODUCTS (MANUAL ONLY)
+async function loadProducts() {
+  const res = await fetch(`${API}/products/`);
+  let data = await res.json();
+
+  if (!Array.isArray(data)) {
+    alert("Error loading products");
+    return;
+  }
+
+  render(data);
+}
+
+// RENDER FUNCTION
+function render(data) {
+  const div = document.getElementById("list");
+  div.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    div.innerHTML = "<p>No products</p>";
+    return;
+  }
+
+  data.forEach(p => {
+    div.innerHTML += `
+      <div class="card">
+        <b>${p.name}</b> (${p.size || ""})<br>
+        Stock: ${p.stock || 0}<br>
+        Cost: ${p.price || 0}<br>
+        Selling: ${p.selling_price || "N/A"}<br>
+      </div>
+    `;
+  });
+}
 
 </script>
 
