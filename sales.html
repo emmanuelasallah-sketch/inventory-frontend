@@ -172,18 +172,18 @@ let cart = [];
 let products = [];
 let currentProduct = null;
 
-// 🔙 BACK
+// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// 📦 LOAD PRODUCTS
+// LOAD PRODUCTS
 async function loadProducts() {
   const res = await fetch(`${API_URL}/products/`);
   products = await res.json();
 }
 
-// 🔍 AUTO SUGGEST
+// AUTO SUGGEST
 function showSuggestions() {
   const input = document.getElementById("name").value.toLowerCase();
   const box = document.getElementById("suggestions");
@@ -207,7 +207,7 @@ function showSuggestions() {
   });
 }
 
-// 🔍 CHECK STOCK
+// CHECK STOCK
 function checkStock() {
   const name = document.getElementById("name").value;
   const size = document.getElementById("size").value;
@@ -227,13 +227,16 @@ function checkStock() {
 
   currentProduct = product;
 
+  const priceToUse = product.selling_price || product.price;
+
   stockInfo.innerHTML = `
-    Stock: ${product.stock} <br>
-    Price: ${product.price}
+    ✅ Found <br>
+    Stock: <b>${product.stock}</b><br>
+    Price: <b>${priceToUse}</b>
   `;
 }
 
-// ➕ ADD TO CART
+// ADD TO CART
 function addToCart() {
   const qty = parseInt(document.getElementById("quantity").value);
 
@@ -247,17 +250,29 @@ function addToCart() {
     return;
   }
 
-  cart.push({
-    product_name: currentProduct.name,
-    size: currentProduct.size,
-    quantity: qty,
-    price: currentProduct.price
-  });
+  const priceToUse = currentProduct.selling_price || currentProduct.price;
+
+  // Prevent duplicate entries → merge quantities
+  const existing = cart.find(item =>
+    item.product_name === currentProduct.name &&
+    item.size === currentProduct.size
+  );
+
+  if (existing) {
+    existing.quantity += qty;
+  } else {
+    cart.push({
+      product_name: currentProduct.name,
+      size: currentProduct.size,
+      quantity: qty,
+      price: priceToUse
+    });
+  }
 
   renderCart();
 }
 
-// 🧾 RENDER CART
+// RENDER CART
 function renderCart() {
   const container = document.getElementById("cart");
   container.innerHTML = "";
@@ -270,8 +285,10 @@ function renderCart() {
 
     container.innerHTML += `
       <div class="cart-item card">
-        ${item.product_name} (${item.size}) 
-        x${item.quantity} = ${subtotal}
+        <div>
+          <b>${item.product_name}</b> (${item.size})<br>
+          ${item.quantity} × ${item.price} = <b>${subtotal}</b>
+        </div>
         <button onclick="removeItem(${index})">❌</button>
       </div>
     `;
@@ -280,18 +297,21 @@ function renderCart() {
   document.getElementById("total").innerText = total;
 }
 
-// ❌ REMOVE
+// REMOVE ITEM
 function removeItem(index) {
   cart.splice(index, 1);
   renderCart();
 }
 
-// 💳 CHECKOUT
+// CHECKOUT (REAL TRANSACTION)
 async function checkout() {
   if (cart.length === 0) {
     alert("Cart is empty");
     return;
   }
+
+  const confirmSale = confirm("Complete this sale?");
+  if (!confirmSale) return;
 
   const res = await fetch(`${API_URL}/sales/`, {
     method: "POST",
@@ -307,16 +327,24 @@ async function checkout() {
   if (data.error || data.detail) {
     message.innerHTML = data.error || data.detail;
     message.style.color = "red";
-  } else {
-    message.innerHTML = "✅ Sale completed";
-    message.style.color = "green";
-    cart = [];
-    renderCart();
-    loadTodaySales();
+    return;
   }
+
+  // SUCCESS FLOW
+  message.innerHTML = "✅ Sale completed successfully";
+  message.style.color = "green";
+
+  cart = [];
+  renderCart();
+
+  // Reload products → reflects updated stock
+  await loadProducts();
+
+  // Refresh sales summary
+  loadTodaySales();
 }
 
-// 📊 TODAY SALES
+// TODAY SALES
 async function loadTodaySales() {
   const res = await fetch(`${API_URL}/sales/today`);
   const data = await res.json();
@@ -334,6 +362,5 @@ window.onload = function() {
 };
 
 </script>
-
 </body>
 </html>

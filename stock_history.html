@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Stock History</title>
+  <title>Stock Tracking</title>
 
   <style>
     body {
@@ -11,7 +11,38 @@
     }
 
     h2 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+    }
+
+    .topbar {
+      margin-bottom: 15px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      padding: 8px;
+      width: 220px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .print {
+      background: #16a34a;
     }
 
     .card {
@@ -21,119 +52,184 @@
       border-radius: 8px;
     }
 
-    button {
-      margin-bottom: 20px;
-      padding: 8px 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
+    .section {
+      margin-top: 20px;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
+    .summary {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 10px;
+    }
 
-  body {
-    padding: 10px;
-  }
+    @media print {
+      button, input {
+        display: none;
+      }
 
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
-
+      body {
+        background: white;
+      }
+    }
   </style>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
-<button onclick="goBack()">⬅ Back to Dashboard</button>
+<div class="topbar">
+  <button onclick="goBack()">⬅ Dashboard</button>
+  <button class="print" onclick="printReport()">🖨 Print</button>
+</div>
 
-<h2>Stock History</h2>
-<input type="text" id="search" placeholder="Search product..." oninput="filterHistory()">
-<button onclick="goToSearch()">Search</button>
+<h2>📦 Stock Tracking</h2>
+
+<!-- SEARCH (WITH BUTTON) -->
+<div class="search-box">
+  <input type="text" id="search" placeholder="Search product...">
+  <button onclick="applyFilters()">Search</button>
+  <button onclick="resetFilters()">Reset</button>
+</div>
+
 <div id="history"></div>
 
+<!-- SUMMARY -->
+<div class="summary" id="summary"></div>
+
+<!-- DAILY GROUP -->
+<div class="section">
+  <h3>📊 Daily Stock Added</h3>
+  <div id="byDate"></div>
+</div>
+
+<!-- PRODUCT GROUP -->
+<div class="section">
+  <h3>📦 Stock by Product</h3>
+  <div id="byProduct"></div>
+</div>
+
 <script>
+
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
-// 🔙 BACK BUTTON
+let allHistory = [];
+
+// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// 📦 LOAD STOCK HISTORY
+// LOAD DATA
 async function loadHistory() {
   const res = await fetch(`${API_URL}/stock_history`);
   const data = await res.json();
 
+  allHistory = data;
+  renderAll(allHistory);
+}
+
+// MASTER RENDER
+function renderAll(data) {
+  renderMainList(data);
+  renderSummary(data);
+  renderByDate(data);
+  renderByProduct(data);
+}
+
+// MAIN LIST
+function renderMainList(data) {
   const container = document.getElementById("history");
   container.innerHTML = "";
 
-  if (!data || data.length === 0) {
-    container.innerHTML = "<p>No history available</p>";
-    return;
-  }
-
-  data.forEach(function(h) {
+  data.forEach(item => {
     container.innerHTML += `
       <div class="card">
-        <p><strong>${h.name}</strong></p>
-        <p>Added: ${h.quantity_added}</p>
-        <p>Date: ${new Date(h.created_at).toLocaleString()}</p>
+        <b>${item.name}</b><br>
+        Qty Added: ${item.quantity_added}<br>
+        Date: ${new Date(item.created_at).toLocaleString("en-GB")}
       </div>
     `;
   });
 }
 
-// 🚀 LOAD ON PAGE OPEN
+// SUMMARY
+function renderSummary(data) {
+  const total = data.reduce((sum, i) => sum + i.quantity_added, 0);
+  const products = new Set(data.map(i => i.name)).size;
+
+  document.getElementById("summary").innerHTML =
+    `📈 Total Stock Added: ${total} | 📦 Products: ${products} | 📄 Records: ${data.length}`;
+}
+
+// 📊 GROUP BY DATE
+function renderByDate(data) {
+  const container = document.getElementById("byDate");
+  container.innerHTML = "";
+
+  const grouped = {};
+
+  data.forEach(i => {
+    const date = new Date(i.created_at).toLocaleDateString();
+    grouped[date] = (grouped[date] || 0) + i.quantity_added;
+  });
+
+  for (let d in grouped) {
+    container.innerHTML += `
+      <div class="card">
+        ${d} → <b>${grouped[d]} units</b>
+      </div>
+    `;
+  }
+}
+
+// 📦 GROUP BY PRODUCT
+function renderByProduct(data) {
+  const container = document.getElementById("byProduct");
+  container.innerHTML = "";
+
+  const grouped = {};
+
+  data.forEach(i => {
+    grouped[i.name] = (grouped[i.name] || 0) + i.quantity_added;
+  });
+
+  for (let p in grouped) {
+    container.innerHTML += `
+      <div class="card">
+        ${p} → <b>${grouped[p]} units</b>
+      </div>
+    `;
+  }
+}
+
+// SEARCH FILTER
+function applyFilters() {
+  const query = document.getElementById("search").value.toLowerCase();
+
+  const filtered = allHistory.filter(i =>
+    i.name.toLowerCase().includes(query)
+  );
+
+  renderAll(filtered);
+}
+
+// RESET
+function resetFilters() {
+  document.getElementById("search").value = "";
+  renderAll(allHistory);
+}
+
+// PRINT
+function printReport() {
+  window.print();
+}
+
+// INIT
 window.onload = function() {
   loadHistory();
 };
 
-container.innerHTML = "Loading...";
 </script>
 
 </body>

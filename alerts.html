@@ -11,11 +11,25 @@
     }
 
     h2 {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+    }
+
+    .topbar {
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: red;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-left: 10px;
     }
 
     .section {
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .card {
@@ -23,84 +37,61 @@
       padding: 12px;
       margin-bottom: 10px;
       border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .low { border-left: 5px solid orange; }
-    .expiring { border-left: 5px solid blue; }
-    .expired { border-left: 5px solid red; }
+    .low {
+      border-left: 5px solid orange;
+    }
+
+    .expiring {
+      border-left: 5px solid blue;
+    }
+
+    .expired {
+      border-left: 5px solid red;
+    }
 
     button {
-      margin-bottom: 20px;
       padding: 8px 12px;
       border: none;
       background: #2563eb;
       color: white;
       cursor: pointer;
+      border-radius: 5px;
+      margin-bottom: 15px;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
 
-  body {
-    padding: 10px;
-  }
+      button {
+        width: 100%;
+      }
 
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
-
+      .card {
+        font-size: 14px;
+      }
+    }
   </style>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
-<button onclick="goBack()">⬅ Back to Dashboard</button>
+<!-- TOP BAR -->
+<div class="topbar">
+  <button onclick="goBack()">⬅ Back to Dashboard</button>
+  <h2>
+    Alerts Dashboard
+    <span id="alertCount" class="badge">0</span>
+  </h2>
+</div>
 
-<h2>Alerts Dashboard</h2>
-
+<!-- SECTIONS -->
 <div class="section">
   <h3>⚠ Low Stock</h3>
   <div id="lowStock"></div>
@@ -117,52 +108,72 @@ h2, h3 {
 </div>
 
 <script>
+
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
+// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-async function loadAlertCount() {
-  const res = await fetch(`${API_URL}/products/alerts`);
-  const data = await res.json();
+// LOAD ALERTS
+async function loadAlerts() {
+  try {
+    const res = await fetch(`${API_URL}/products/alerts`);
+    const data = await res.json();
 
-  const badge = document.getElementById("alertCount");
-  const count = data.length;
+    const lowStockDiv = document.getElementById("lowStock");
+    const expiringDiv = document.getElementById("expiring");
+    const expiredDiv = document.getElementById("expired");
+    const badge = document.getElementById("alertCount");
 
-  badge.innerText = count;
+    // CLEAR OLD DATA
+    lowStockDiv.innerHTML = "";
+    expiringDiv.innerHTML = "";
+    expiredDiv.innerHTML = "";
 
-  if (count === 0) {
-    badge.style.display = "none";
-  } else {
-    badge.style.display = "inline-block";
+    // COUNT ALERTS
+    badge.innerText = data.length;
+
+    if (data.length === 0) {
+      badge.style.display = "none";
+    } else {
+      badge.style.display = "inline-block";
+    }
+
+    // RENDER ALERTS
+    data.forEach(alert => {
+
+      const card = `
+        <div class="card">
+          <b>${alert.product}</b><br>
+          ${alert.message || "Alert triggered"}
+        </div>
+      `;
+
+      if (alert.type === "low_stock") {
+        lowStockDiv.innerHTML += `<div class="card low">${card}</div>`;
+      }
+
+      if (alert.type === "expiring_soon") {
+        expiringDiv.innerHTML += `<div class="card expiring">${card}</div>`;
+      }
+
+      if (alert.type === "expired") {
+        expiredDiv.innerHTML += `<div class="card expired">${card}</div>`;
+      }
+    });
+
+  } catch (err) {
+    console.error("Failed to load alerts:", err);
   }
-
-
-  data.forEach(a => {
-    let html = `<div class="card">
-      <p><strong>${a.product}</strong></p>
-    </div>`;
-
-    if (a.type === "low_stock") {
-      lowStockDiv.innerHTML += `<div class="card low">${html}</div>`;
-    }
-
-    if (a.type === "expiring_soon") {
-      expiringDiv.innerHTML += `<div class="card expiring">${html}</div>`;
-    }
-
-    if (a.type === "expired") {
-      expiredDiv.innerHTML += `<div class="card expired">${html}</div>`;
-    }
-  });
 }
 
+// INIT
 window.onload = function() {
   loadAlerts();
 };
 
-container.innerHTML = "Loading...";
 </script>
 
 </body>

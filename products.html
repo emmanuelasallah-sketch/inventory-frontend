@@ -17,16 +17,45 @@
       margin-bottom: 20px;
     }
 
-    input, select, button {
+    h2 {
+      margin: 0;
+    }
+
+    h3 {
+      margin-top: 10px;
+    }
+
+    /* FORM GRID (controls width neatly) */
+    .form-container {
+      display: grid;
+      grid-template-columns: repeat(3, 200px);
+      gap: 10px;
+      align-items: center;
+    }
+
+    input, select {
       padding: 8px;
-      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     button {
+      padding: 8px 12px;
       background: #2563eb;
       color: white;
       border: none;
+      border-radius: 6px;
       cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e4ed8;
+    }
+
+    .actions {
+      margin-top: 10px;
     }
 
     .card {
@@ -34,6 +63,7 @@
       padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
   </style>
 </head>
@@ -48,28 +78,50 @@
 <!-- ADD PRODUCT -->
 <h3>Add Product</h3>
 
-<div>
-  <input id="name" placeholder="Name">
-  <input id="size" placeholder="Size">
+<div class="form-container">
+
+  <input id="name" placeholder="Product Name">
+
+  <!-- CATEGORY DROPDOWN -->
+  <select id="category">
+    <option value="">Select Category</option>
+    <option value="fragrance">Fragrance</option>
+    <option value="haircare">Haircare</option>
+    <option value="skincare">Skincare</option>
+    <option value="hygienics">Hygienics</option>
+    <option value="makeup">Makeup</option>
+    <option value="others">Others</option>
+  </select>
+
+  <!-- SIZE DROPDOWN -->
+  <select id="size">
+    <option value="">Select Size</option>
+    <option value="Small">Small</option>
+    <option value="Medium">Medium</option>
+    <option value="Large">Large</option>
+  </select>
+
   <input id="price" type="number" placeholder="Cost Price">
   <input id="selling_price" type="number" placeholder="Selling Price (optional)">
   <input id="stock" type="number" placeholder="Stock">
 
+</div>
+
+<div class="actions">
   <button onclick="addProduct()">Add</button>
   <button onclick="clearForm()">Clear</button>
 </div>
 
 <hr>
 
-<!-- SEARCH (REDIRECT ONLY) -->
+<!-- SEARCH -->
 <div>
-  <input id="search" placeholder="Search product">
+  <input id="search" placeholder="Search product" style="width: 200px;">
   <button onclick="goToSearch()">Search</button>
 </div>
 
 <hr>
 
-<!-- OPTIONAL: MANUAL LOAD BUTTON -->
 <button onclick="loadProducts()">Load All Products</button>
 
 <div id="list"></div>
@@ -83,7 +135,7 @@ function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// 🔍 REDIRECT SEARCH (IMPORTANT CHANGE)
+// SEARCH REDIRECT
 function goToSearch() {
   const query = document.getElementById("search").value.trim();
 
@@ -99,11 +151,17 @@ function goToSearch() {
 async function addProduct() {
   const body = {
     name: document.getElementById("name").value,
+    category: document.getElementById("category").value,
     size: document.getElementById("size").value,
     price: document.getElementById("price").value,
     selling_price: document.getElementById("selling_price").value,
     stock: document.getElementById("stock").value
   };
+
+  if (!body.name || !body.category || !body.size) {
+    alert("Name, Category and Size are required");
+    return;
+  }
 
   const res = await fetch(`${API}/products/`, {
     method: "POST",
@@ -118,13 +176,14 @@ async function addProduct() {
 // CLEAR FORM
 function clearForm() {
   document.getElementById("name").value = "";
+  document.getElementById("category").value = "";
   document.getElementById("size").value = "";
   document.getElementById("price").value = "";
   document.getElementById("selling_price").value = "";
   document.getElementById("stock").value = "";
 }
 
-// OPTIONAL: LOAD ALL PRODUCTS (MANUAL ONLY)
+// LOAD PRODUCTS
 async function loadProducts() {
   const res = await fetch(`${API}/products/`);
   let data = await res.json();
@@ -137,7 +196,7 @@ async function loadProducts() {
   render(data);
 }
 
-// RENDER FUNCTION
+// RENDER
 function render(data) {
   const div = document.getElementById("list");
   div.innerHTML = "";
@@ -151,6 +210,7 @@ function render(data) {
     div.innerHTML += `
       <div class="card">
         <b>${p.name}</b> (${p.size || ""})<br>
+        Category: ${p.category || "N/A"}<br>
         Stock: ${p.stock || 0}<br>
         Cost: ${p.price || 0}<br>
         Selling: ${p.selling_price || "N/A"}<br>

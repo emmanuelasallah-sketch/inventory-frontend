@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Stock History</title>
+  <title>Sales History</title>
 
   <style>
     body {
@@ -10,10 +10,26 @@
       padding: 20px;
     }
 
+    .topbar {
+      margin-bottom: 15px;
+    }
+
     input {
       padding: 8px;
-      width: 250px;
-      margin-bottom: 15px;
+      margin: 5px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .print {
+      background: #16a34a;
     }
 
     .card {
@@ -23,138 +39,163 @@
       border-radius: 8px;
     }
 
-    button {
-      margin-bottom: 20px;
-      padding: 8px 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
+    .filters {
+      margin-bottom: 15px;
     }
-    body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
 
-/* MOBILE RESPONSIVE SYSTEM */
-@media (max-width: 768px) {
+    .total-box {
+      font-weight: bold;
+      font-size: 18px;
+      margin-top: 10px;
+    }
 
-  body {
-    padding: 10px;
-  }
-
-  .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .row {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  button {
-    padding: 12px;
-  }
-
-  .card {
-    font-size: 14px;
-    padding: 10px;
-  }
-}
-
-
-body {
-  font-family: Arial;
-}
-
-/* existing styles... */
-
-button {
-  min-height: 40px;
-}
-
-h2, h3 {
-  font-size: 20px;
-}
-
-
+    /* PRINT CLEANUP */
+    @media print {
+      button, input {
+        display: none;
+      }
+      body {
+        background: white;
+      }
+    }
   </style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
 
-<button onclick="goBack()">⬅ Back to Dashboard</button>
+<div class="topbar">
+  <button onclick="goBack()">⬅ Dashboard</button>
+  <button class="print" onclick="printReport()">🖨 Print</button>
+</div>
 
-<h2>Sales History</h2>
+<h2>📊 Sales History</h2>
 
-<input type="text" id="search" placeholder="Search product..." oninput="filterHistory()">
-<button onclick="goToSearch()">Search</button>
+<!-- 🔍 FILTERS -->
+<div class="filters">
+
+  <!-- Product Search -->
+  <input type="text" id="search" placeholder="Product name">
+  <button onclick="applyFilters()">Search</button>
+
+  <br>
+
+  <!-- Date Range -->
+  <input type="date" id="startDate">
+  <input type="date" id="endDate">
+  <button onclick="applyFilters()">Filter by Date</button>
+
+  <button onclick="resetFilters()">Reset</button>
+
+</div>
+
 <div id="history"></div>
 
+<div class="total-box">
+  Total Revenue: <span id="totalRevenue">0</span>
+</div>
+
 <script>
+
 const API_URL = "https://inventory-system-eipk.onrender.com";
 
-let allHistory = [];
+let allSales = [];
 
+// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
 // LOAD DATA
 async function loadHistory() {
-  const res = await fetch(`${API_URL}/stock_history`);
+  const res = await fetch(`${API_URL}/sales/`);
   const data = await res.json();
 
-  allHistory = data;
-  displayHistory(allHistory);
+  allSales = data;
+  displayHistory(allSales);
 }
 
-// DISPLAY FUNCTION
+// DISPLAY
 function displayHistory(data) {
   const container = document.getElementById("history");
   container.innerHTML = "";
 
+  let totalRevenue = 0;
+
   if (!data || data.length === 0) {
-    container.innerHTML = "<p>No history available</p>";
+    container.innerHTML = "<p>No sales found</p>";
+    document.getElementById("totalRevenue").innerText = 0;
     return;
   }
 
-  data.forEach(function(h) {
+  data.forEach(sale => {
+    const total = sale.price * sale.quantity;
+    totalRevenue += total;
+
     container.innerHTML += `
       <div class="card">
-        <p><strong>${h.name}</strong></p>
-        <p>Added: ${h.quantity_added}</p>
-        <p>Date: ${new Date(h.created_at).toLocaleString()}</p>
+        <strong>${sale.product_name}</strong><br>
+        Size: ${sale.size}<br>
+        Qty: ${sale.quantity}<br>
+        Price: ${sale.price}<br>
+        Total: <b>${total}</b><br>
+        Date: ${new Date(sale.created_at).toLocaleString()}
       </div>
     `;
   });
+
+  document.getElementById("totalRevenue").innerText = totalRevenue;
 }
 
-// 🔍 FILTER FUNCTION
-function filterHistory() {
+// APPLY FILTERS
+function applyFilters() {
   const query = document.getElementById("search").value.toLowerCase();
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
 
-  const filtered = allHistory.filter(function(h) {
-    return h.name.toLowerCase().includes(query);
-  });
+  let filtered = allSales;
+
+  // 🔍 Filter by product name
+  if (query) {
+    filtered = filtered.filter(s =>
+      s.product_name.toLowerCase().includes(query)
+    );
+  }
+
+  // 📅 Filter by date range
+  if (start) {
+    filtered = filtered.filter(s =>
+      new Date(s.created_at) >= new Date(start)
+    );
+  }
+
+  if (end) {
+    filtered = filtered.filter(s =>
+      new Date(s.created_at) <= new Date(end + "T23:59:59")
+    );
+  }
 
   displayHistory(filtered);
-
 }
 
+// RESET
+function resetFilters() {
+  document.getElementById("search").value = "";
+  document.getElementById("startDate").value = "";
+  document.getElementById("endDate").value = "";
+
+  displayHistory(allSales);
+}
+
+// PRINT
+function printReport() {
+  window.print();
+}
+
+// INIT
 window.onload = function() {
   loadHistory();
 };
 
-container.innerHTML = "Loading...";
 </script>
 
 </body>
