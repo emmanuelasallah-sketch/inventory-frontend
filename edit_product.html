@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Product</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 15px;
+    }
+
+    .form {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 400px;
+    }
+
+    input, select {
+      width: 90%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .secondary {
+      background: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>✏️ Edit Product</h2>
+
+<div class="form">
+
+  <input id="name" placeholder="Product Name">
+
+  <!-- CATEGORY DROPDOWN -->
+  <select id="category">
+    <option value="">Select Category</option>
+    <option value="fragrance">Fragrance</option>
+    <option value="haircare">Haircare</option>
+    <option value="skincare">Skincare</option>
+    <option value="hygienics">Hygienics</option>
+    <option value="others">Others</option>
+  </select>
+
+  <!-- SIZE DROPDOWN -->
+  <select id="size">
+    <option value="">Select Size</option>
+    <option value="Big">Big</option>
+    <option value="Medium">Medium</option>
+    <option value="Small">Small</option>
+  </select>
+
+  <input id="price" type="number" placeholder="Cost Price">
+  <input id="selling_price" type="number" placeholder="Selling Price">
+  <input id="stock" type="number" placeholder="Stock">
+
+  <button onclick="updateProduct()">💾 Update Product</button>
+  <button class="secondary" onclick="goBack()">Cancel</button>
+
+</div>
+
+<script>
+
+const API_URL = "https://inventory-system-eipk.onrender.com";
+
+let productId = null;
+
+// GET ID FROM URL
+function getId() {
+  const params = new URLSearchParams(window.location.search);
+  productId = params.get("id");
+}
+
+// LOAD PRODUCT
+async function loadProduct() {
+  const res = await fetch(`${API_URL}/products/`);
+  const data = await res.json();
+
+  const product = data.find(p => p.id == productId);
+
+  if (!product) {
+    alert("Product not found");
+    return;
+  }
+
+  // FILL FIELDS
+  document.getElementById("name").value = product.name || "";
+  document.getElementById("category").value = (product.category || "").toLowerCase();
+  document.getElementById("size").value = product.size || "";
+  document.getElementById("price").value = product.price || "";
+  document.getElementById("selling_price").value = product.selling_price || "";
+  document.getElementById("stock").value = product.stock || "";
+}
+
+// UPDATE PRODUCT
+async function updateProduct() {
+  const body = {
+    name: document.getElementById("name").value,
+    category: document.getElementById("category").value,
+    size: document.getElementById("size").value,
+    price: document.getElementById("price").value,
+    selling_price: document.getElementById("selling_price").value,
+    stock: document.getElementById("stock").value
+  };
+
+  const res = await fetch(`${API_URL}/products/${productId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json();
+
+  alert(data.message || "Product updated successfully");
+
+  window.location.href = "search.html";
+}
+
+// BACK
+function goBack() {
+  window.location.href = "search.html";
+}
+
+// INIT
+window.onload = function() {
+  getId();
+  loadProduct();
+};
+
+</script>
+
+</body>
+</html>

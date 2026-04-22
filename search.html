@@ -14,18 +14,36 @@
       margin-bottom: 10px;
     }
 
+    .search-box {
+      position: relative;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     input {
       padding: 10px;
-      width: 300px;
+      width: 250px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
 
+    button {
+      padding: 10px 15px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
     .suggestions {
+      position: absolute;
+      top: 45px;
+      left: 0;
       background: white;
       border: 1px solid #ddd;
-      max-width: 300px;
-      position: absolute;
+      width: 250px;
       z-index: 1000;
     }
 
@@ -49,9 +67,9 @@
       padding: 6px 10px;
       margin-right: 5px;
       border: none;
-      cursor: pointer;
       border-radius: 5px;
       color: white;
+      cursor: pointer;
     }
 
     .edit { background: #f59e0b; }
@@ -65,10 +83,12 @@
 
 <h2>🔍 Product Search</h2>
 
-<input id="search" placeholder="Search product..." oninput="showSuggestions()" />
+<div class="search-box">
+  <input id="search" placeholder="Search product..." oninput="showSuggestions()">
+  <button onclick="searchProduct()">Search</button>
+</div>
 
 <div id="suggestions" class="suggestions"></div>
-
 <div id="results"></div>
 
 <script>
@@ -83,8 +103,6 @@ async function loadProducts() {
   products = await res.json();
 }
 
-loadProducts();
-
 // AUTOCOMPLETE
 function showSuggestions() {
   const input = document.getElementById("search").value.toLowerCase().trim();
@@ -98,57 +116,79 @@ function showSuggestions() {
     p.name.toLowerCase().includes(input)
   );
 
-  filtered.slice(0, 6).forEach(p => {
+  filtered.slice(0, 5).forEach(p => {
     const div = document.createElement("div");
     div.innerText = `${p.name} (${p.size || ""})`;
 
     div.onclick = () => {
       document.getElementById("search").value = p.name;
       box.innerHTML = "";
-      renderProduct(p);
+      renderResults([p]);
     };
 
     box.appendChild(div);
   });
 }
 
-// MAIN SEARCH
-document.getElementById("search").addEventListener("keyup", function(e) {
-  const query = e.target.value.toLowerCase().trim();
+// SEARCH BUTTON FUNCTION
+function searchProduct() {
+  const query = document.getElementById("search").value.toLowerCase().trim();
 
-  const match = products.filter(p =>
+  if (!query) {
+    alert("Enter product name");
+    return;
+  }
+
+  const results = products.filter(p =>
     p.name.toLowerCase().includes(query)
   );
 
-  if (match.length === 1) {
-    renderProduct(match[0]);
-  }
-});
-
-// RENDER PRODUCT CARD
-function renderProduct(p) {
-  const container = document.getElementById("results");
-
-  container.innerHTML = `
-    <div class="card">
-      <b>${p.name}</b><br>
-      Size: ${p.size || "N/A"}<br>
-      Stock: ${p.stock || 0}<br>
-      Price: ${p.price || 0}<br><br>
-
-      <button class="btn edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
-      <button class="btn sell" onclick="sellProduct('${p.name}')">🛒 Sell</button>
-      <button class="btn delete" onclick="deleteProduct('${p.id}')">❌ Delete</button>
-    </div>
-  `;
+  renderResults(results);
 }
 
-// SELL → redirect to sales page
+// AUTO SEARCH FROM URL
+function autoSearchFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("q");
+
+  if (!query) return;
+
+  document.getElementById("search").value = query;
+  searchProduct();
+}
+
+// RENDER MULTIPLE RESULTS
+function renderResults(data) {
+  const container = document.getElementById("results");
+  container.innerHTML = "";
+
+  if (!data.length) {
+    container.innerHTML = "<p>No product found</p>";
+    return;
+  }
+
+  data.forEach(p => {
+    container.innerHTML += `
+      <div class="card">
+        <b>${p.name}</b><br>
+        Size: ${p.size || "N/A"}<br>
+        Stock: ${p.stock || 0}<br>
+        Price: ${p.price || 0}<br><br>
+
+        <button class="btn edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
+        <button class="btn sell" onclick="sellProduct('${p.name}')">🛒 Sell</button>
+        <button class="btn delete" onclick="deleteProduct('${p.id}')">❌ Delete</button>
+      </div>
+    `;
+  });
+}
+
+// SELL
 function sellProduct(name) {
   window.location.href = `sales.html?product=${encodeURIComponent(name)}`;
 }
 
-// DELETE PRODUCT
+// DELETE
 async function deleteProduct(id) {
   if (!confirm("Delete this product?")) return;
 
@@ -158,12 +198,19 @@ async function deleteProduct(id) {
 
   alert("Deleted");
   loadProducts();
+  document.getElementById("results").innerHTML = "";
 }
 
-// EDIT PRODUCT (simple version → redirect)
+// EDIT
 function editProduct(id) {
   window.location.href = `edit_product.html?id=${id}`;
 }
+
+// INIT
+window.onload = async function() {
+  await loadProducts();
+  autoSearchFromURL();
+};
 
 </script>
 
