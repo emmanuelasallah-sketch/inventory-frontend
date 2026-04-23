@@ -8,76 +8,113 @@
       font-family: Arial;
       background: #f4f6f8;
       padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
     }
 
     h2 {
-      margin-bottom: 15px;
+      margin: 20px;
     }
 
     .form {
       background: white;
-      padding: 15px;
-      border-radius: 10px;
-      max-width: 400px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     input, select {
-      width: 90%;
+      width: 95%;
       padding: 10px;
-      margin: 6px 0;
+      margin: 8px 0;
       border-radius: 6px;
       border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
     }
 
     button {
+      flex: 1;
       padding: 10px;
-      margin-top: 10px;
       border: none;
-      background: #2563eb;
-      color: white;
       border-radius: 6px;
       cursor: pointer;
-      width: 100%;
+      color: white;
+      font-size: 14px;
+    }
+
+    .primary {
+      background: #2563eb;
     }
 
     .secondary {
       background: #6b7280;
+    }
+
+    .back-btn {
+      background: #2563eb;
+      padding: 8px 12px;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-<h2>✏️ Edit Product</h2>
+<div class="container">
 
-<div class="form">
+  <div class="topbar">
+    <button class="back-btn" onclick="goToDashboard()">⬅ Dashboard</button>
+    <h2>Edit Product</h2>
+  </div>
 
-  <input id="name" placeholder="Product Name">
+  <div class="form">
 
-  <!-- CATEGORY DROPDOWN -->
-  <select id="category">
-    <option value="">Select Category</option>
-    <option value="fragrance">Fragrance</option>
-    <option value="haircare">Haircare</option>
-    <option value="skincare">Skincare</option>
-    <option value="hygienics">Hygienics</option>
-    <option value="others">Others</option>
-  </select>
+    <input id="name" placeholder="Product Name">
 
-  <!-- SIZE DROPDOWN -->
-  <select id="size">
-    <option value="">Select Size</option>
-    <option value="Big">Big</option>
-    <option value="Medium">Medium</option>
-    <option value="Small">Small</option>
-  </select>
+    <select id="category">
+      <option value="">Select Category</option>
+      <option value="fragrance">Fragrance</option>
+      <option value="haircare">Haircare</option>
+      <option value="skincare">Skincare</option>
+      <option value="hygienics">Hygienics</option>
+      <option value="others">Others</option>
+    </select>
 
-  <input id="price" type="number" placeholder="Cost Price">
-  <input id="selling_price" type="number" placeholder="Selling Price">
-  <input id="stock" type="number" placeholder="Stock">
+    <select id="size">
+      <option value="">Select Size</option>
+      <option value="Big">Big</option>
+      <option value="Medium">Medium</option>
+      <option value="Small">Small</option>
+    </select>
 
-  <button onclick="updateProduct()">💾 Update Product</button>
-  <button class="secondary" onclick="goBack()">Cancel</button>
+    <input id="price" type="number" placeholder="Cost Price">
+    <input id="selling_price" type="number" placeholder="Selling Price">
+    <input id="stock" type="number" placeholder="Stock">
+
+    <div class="actions">
+      <button class="primary" onclick="updateProduct()">💾 Update</button>
+      <button class="secondary" onclick="goBack()">Cancel</button>
+    </div>
+
+  </div>
 
 </div>
 
@@ -87,7 +124,7 @@ const API_URL = "https://inventory-system-eipk.onrender.com";
 
 let productId = null;
 
-// GET ID FROM URL
+// GET ID
 function getId() {
   const params = new URLSearchParams(window.location.search);
   productId = params.get("id");
@@ -105,7 +142,6 @@ async function loadProduct() {
     return;
   }
 
-  // FILL FIELDS
   document.getElementById("name").value = product.name || "";
   document.getElementById("category").value = (product.category || "").toLowerCase();
   document.getElementById("size").value = product.size || "";
@@ -114,7 +150,7 @@ async function loadProduct() {
   document.getElementById("stock").value = product.stock || "";
 }
 
-// UPDATE PRODUCT
+// UPDATE
 async function updateProduct() {
   const body = {
     name: document.getElementById("name").value,
@@ -127,20 +163,22 @@ async function updateProduct() {
 
   const res = await fetch(`${API_URL}/products/${productId}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
 
   const data = await res.json();
 
-  alert(data.message || "Product updated successfully");
+  alert(data.message || "Updated successfully");
 
   window.location.href = "search.html";
 }
 
-// BACK
+// NAVIGATION
+function goToDashboard() {
+  window.location.href = "dashboard.html";
+}
+
 function goBack() {
   window.location.href = "search.html";
 }
