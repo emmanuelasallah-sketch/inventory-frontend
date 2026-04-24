@@ -25,7 +25,6 @@
       margin-top: 10px;
     }
 
-    /* FORM GRID (controls width neatly) */
     .form-container {
       display: grid;
       grid-template-columns: repeat(3, 200px);
@@ -65,7 +64,54 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+
+    /* ================= MOBILE RESPONSIVE SYSTEM ================= */
+    @media (max-width: 768px) {
+
+      body {
+        padding: 10px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .form-container {
+        grid-template-columns: 1fr;
+      }
+
+      input, select, button {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      button {
+        padding: 12px;
+      }
+
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .card {
+        font-size: 14px;
+      }
+
+      /* SEARCH AREA FIX */
+      #search {
+        width: 100% !important;
+      }
+    }
+
   </style>
+
+  <!-- MOBILE VIEWPORT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
@@ -82,7 +128,6 @@
 
   <input id="name" placeholder="Product Name">
 
-  <!-- CATEGORY DROPDOWN -->
   <select id="category">
     <option value="">Select Category</option>
     <option value="fragrance">Fragrance</option>
@@ -93,7 +138,6 @@
     <option value="others">Others</option>
   </select>
 
-  <!-- SIZE DROPDOWN -->
   <select id="size">
     <option value="">Select Size</option>
     <option value="Small">Small</option>
@@ -114,7 +158,6 @@
 
 <hr>
 
-<!-- SEARCH -->
 <div>
   <input id="search" placeholder="Search product" style="width: 200px;">
   <button onclick="goToSearch()">Search</button>
@@ -127,15 +170,12 @@
 <div id="list"></div>
 
 <script>
-
 const API = "https://inventory-system-eipk.onrender.com";
 
-// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// SEARCH REDIRECT
 function goToSearch() {
   const query = document.getElementById("search").value.trim();
 
@@ -147,7 +187,6 @@ function goToSearch() {
   window.location.href = `search.html?q=${encodeURIComponent(query)}`;
 }
 
-// ADD PRODUCT
 async function addProduct() {
   const body = {
     name: document.getElementById("name").value,
@@ -173,7 +212,6 @@ async function addProduct() {
   alert(data.message || "Saved");
 }
 
-// CLEAR FORM
 function clearForm() {
   document.getElementById("name").value = "";
   document.getElementById("category").value = "";
@@ -183,7 +221,6 @@ function clearForm() {
   document.getElementById("stock").value = "";
 }
 
-// LOAD PRODUCTS
 async function loadProducts() {
   const res = await fetch(`${API}/products/`);
   let data = await res.json();
@@ -196,7 +233,6 @@ async function loadProducts() {
   render(data);
 }
 
-// RENDER
 function render(data) {
   const div = document.getElementById("list");
   div.innerHTML = "";
@@ -218,7 +254,6 @@ function render(data) {
     `;
   });
 }
-
 </script>
 
 </body>

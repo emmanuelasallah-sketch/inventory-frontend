@@ -44,6 +44,47 @@
       margin-top: 5px;
       border-radius: 6px;
     }
+
+    /* ================= MOBILE RESPONSIVE SYSTEM ================= */
+    @media (max-width: 768px) {
+
+      body {
+        padding: 10px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      /* STACK INPUT SECTIONS */
+      div[style*="margin-top:10px"],
+      div[style*="margin-top:15px"] {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      input, button {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      button {
+        padding: 12px;
+      }
+
+      .category {
+        padding: 12px;
+      }
+
+      .product {
+        font-size: 14px;
+        padding: 8px;
+      }
+    }
+
   </style>
 </head>
 
@@ -54,19 +95,16 @@
   <h2>Categories</h2>
 </div>
 
-<!-- ✅ ADD CATEGORY (RESTORED) -->
 <div style="margin-top:10px;">
   <input id="newCategory" placeholder="New category">
   <button onclick="addCategory()">Add</button>
 </div>
 
-<!-- ✅ SEARCH (KEPT) -->
 <div style="margin-top:15px;">
   <input id="search" placeholder="Search product" oninput="filterProducts()">
   <button onclick="loadData()">Search</button>
 </div>
 
-<!-- CONTAINER -->
 <div id="container"></div>
 
 <script>
@@ -76,7 +114,6 @@ function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// ✅ ADD CATEGORY (WORKING)
 async function addCategory() {
   const name = document.getElementById("newCategory").value;
 
@@ -95,7 +132,6 @@ async function addCategory() {
   loadData();
 }
 
-// ✅ LOAD EVERYTHING PROPERLY
 let cachedProducts = [];
 let cachedCategories = [];
 
@@ -107,11 +143,10 @@ async function loadData() {
     const prodRes = await fetch(`${API}/products/`);
     cachedProducts = await prodRes.json();
 
-    // 🛡 safety
     if (!Array.isArray(cachedProducts)) cachedProducts = [];
     if (!Array.isArray(cachedCategories)) cachedCategories = [];
 
-    renderFiltered(""); // first render
+    renderFiltered("");
 
   } catch (err) {
     console.error("Load error:", err);
@@ -121,7 +156,6 @@ async function loadData() {
 
 function filterProducts() {
   const search = document.getElementById("search").value.toLowerCase();
-
   renderFiltered(search);
 }
 
@@ -155,7 +189,7 @@ function renderFiltered(search) {
     container.appendChild(section);
   });
 }
-// INIT
+
 window.onload = loadData;
 </script>
 

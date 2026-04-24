@@ -73,7 +73,49 @@
       padding: 8px 12px;
       font-size: 14px;
     }
+
+    /* ================= MOBILE RESPONSIVE SYSTEM ================= */
+    @media (max-width: 768px) {
+
+      body {
+        padding: 10px;
+        display: block; /* FIX CENTERING ISSUE ON MOBILE */
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      h2 {
+        margin: 0;
+      }
+
+      input, select {
+        width: 100%; /* FIX INPUT WIDTH */
+        font-size: 16px;
+      }
+
+      button {
+        font-size: 16px;
+        padding: 12px;
+      }
+
+      .actions {
+        flex-direction: column; /* STACK BUTTONS */
+      }
+    }
+
   </style>
+
+  <!-- MOBILE VIEWPORT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
@@ -124,13 +166,11 @@ const API_URL = "https://inventory-system-eipk.onrender.com";
 
 let productId = null;
 
-// GET ID
 function getId() {
   const params = new URLSearchParams(window.location.search);
   productId = params.get("id");
 }
 
-// LOAD PRODUCT
 async function loadProduct() {
   const res = await fetch(`${API_URL}/products/`);
   const data = await res.json();
@@ -150,7 +190,6 @@ async function loadProduct() {
   document.getElementById("stock").value = product.stock || "";
 }
 
-// UPDATE
 async function updateProduct() {
   const body = {
     name: document.getElementById("name").value,
@@ -174,7 +213,6 @@ async function updateProduct() {
   window.location.href = "search.html";
 }
 
-// NAVIGATION
 function goToDashboard() {
   window.location.href = "dashboard.html";
 }
@@ -183,7 +221,6 @@ function goBack() {
   window.location.href = "search.html";
 }
 
-// INIT
 window.onload = function() {
   getId();
   loadProduct();

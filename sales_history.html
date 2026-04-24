@@ -58,7 +58,51 @@
         background: white;
       }
     }
+
+    /* ================= MOBILE RESPONSIVE SYSTEM ================= */
+    @media (max-width: 768px) {
+
+      body {
+        padding: 10px;
+      }
+
+      .topbar {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .filters {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      input, button {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      button {
+        padding: 12px;
+      }
+
+      .card {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      .total-box {
+        font-size: 16px;
+      }
+    }
+
   </style>
+
+  <!-- MOBILE VIEWPORT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
@@ -70,16 +114,13 @@
 
 <h2>📊 Sales History</h2>
 
-<!-- 🔍 FILTERS -->
 <div class="filters">
 
-  <!-- Product Search -->
   <input type="text" id="search" placeholder="Product name">
   <button onclick="applyFilters()">Search</button>
 
   <br>
 
-  <!-- Date Range -->
   <input type="date" id="startDate">
   <input type="date" id="endDate">
   <button onclick="applyFilters()">Filter by Date</button>
@@ -100,12 +141,10 @@ const API_URL = "https://inventory-system-eipk.onrender.com";
 
 let allSales = [];
 
-// BACK
 function goBack() {
   window.location.href = "dashboard.html";
 }
 
-// LOAD DATA
 async function loadHistory() {
   const res = await fetch(`${API_URL}/sales/`);
   const data = await res.json();
@@ -114,7 +153,6 @@ async function loadHistory() {
   displayHistory(allSales);
 }
 
-// DISPLAY
 function displayHistory(data) {
   const container = document.getElementById("history");
   container.innerHTML = "";
@@ -146,7 +184,6 @@ function displayHistory(data) {
   document.getElementById("totalRevenue").innerText = totalRevenue;
 }
 
-// APPLY FILTERS
 function applyFilters() {
   const query = document.getElementById("search").value.toLowerCase();
   const start = document.getElementById("startDate").value;
@@ -154,14 +191,12 @@ function applyFilters() {
 
   let filtered = allSales;
 
-  // 🔍 Filter by product name
   if (query) {
     filtered = filtered.filter(s =>
       s.product_name.toLowerCase().includes(query)
     );
   }
 
-  // 📅 Filter by date range
   if (start) {
     filtered = filtered.filter(s =>
       new Date(s.created_at) >= new Date(start)
@@ -177,7 +212,6 @@ function applyFilters() {
   displayHistory(filtered);
 }
 
-// RESET
 function resetFilters() {
   document.getElementById("search").value = "";
   document.getElementById("startDate").value = "";
@@ -186,12 +220,10 @@ function resetFilters() {
   displayHistory(allSales);
 }
 
-// PRINT
 function printReport() {
   window.print();
 }
 
-// INIT
 window.onload = function() {
   loadHistory();
 };

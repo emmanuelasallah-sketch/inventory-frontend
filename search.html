@@ -76,7 +76,53 @@
     .sell { background: #16a34a; }
     .delete { background: #dc2626; }
 
+    /* ================= MOBILE RESPONSIVE SYSTEM ================= */
+    @media (max-width: 768px) {
+
+      body {
+        padding: 10px;
+      }
+
+      .search-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      input {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      button {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+      }
+
+      .suggestions {
+        width: 100%;
+        position: relative;
+        top: 0;
+      }
+
+      .card {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      /* STACK ACTION BUTTONS */
+      .card button {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+      }
+    }
+
   </style>
+
+  <!-- MOBILE VIEWPORT -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
@@ -97,13 +143,11 @@ const API_URL = "https://inventory-system-eipk.onrender.com";
 
 let products = [];
 
-// LOAD PRODUCTS
 async function loadProducts() {
   const res = await fetch(`${API_URL}/products/`);
   products = await res.json();
 }
 
-// AUTOCOMPLETE
 function showSuggestions() {
   const input = document.getElementById("search").value.toLowerCase().trim();
   const box = document.getElementById("suggestions");
@@ -130,7 +174,6 @@ function showSuggestions() {
   });
 }
 
-// SEARCH BUTTON FUNCTION
 function searchProduct() {
   const query = document.getElementById("search").value.toLowerCase().trim();
 
@@ -146,7 +189,6 @@ function searchProduct() {
   renderResults(results);
 }
 
-// AUTO SEARCH FROM URL
 function autoSearchFromURL() {
   const params = new URLSearchParams(window.location.search);
   const query = params.get("q");
@@ -157,7 +199,6 @@ function autoSearchFromURL() {
   searchProduct();
 }
 
-// RENDER MULTIPLE RESULTS
 function renderResults(data) {
   const container = document.getElementById("results");
   container.innerHTML = "";
@@ -183,12 +224,10 @@ function renderResults(data) {
   });
 }
 
-// SELL
 function sellProduct(name) {
   window.location.href = `sales.html?product=${encodeURIComponent(name)}`;
 }
 
-// DELETE
 async function deleteProduct(id) {
   if (!confirm("Delete this product?")) return;
 
@@ -201,12 +240,10 @@ async function deleteProduct(id) {
   document.getElementById("results").innerHTML = "";
 }
 
-// EDIT
 function editProduct(id) {
   window.location.href = `edit_product.html?id=${id}`;
 }
 
-// INIT
 window.onload = async function() {
   await loadProducts();
   autoSearchFromURL();
